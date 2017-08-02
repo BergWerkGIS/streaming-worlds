@@ -1,0 +1,10 @@
+# ignore everything
+/*
+
+# except:
+
+# mapbox-sdk-cs
+!mapbox-sdk-cs/
+
+!*.gitignore
+!/**/*.meta
