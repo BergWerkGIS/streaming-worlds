@@ -22,47 +22,57 @@ public class Tile : MonoBehaviour
 	private int _zoom;
 
 
-	public void Initialize(int z, int x, int y, float offset)
+	public void Initialize(int z, int x, int y)
 	{
 		_zoom = z;
 		string name = string.Format("{0}/{1}/{2}", z, x, y);
 
+		Quaternion rotation = new Quaternion(0.7f, 0, 0, 0.7f);
+
+		GameObject tileRepresentation = transform.Find("tile-data").gameObject;
+		tileRepresentation.transform.SetPositionAndRotation(
+			tileRepresentation.transform.position
+			, rotation
+		);
+
 		_text = transform.Find("text").GetComponent<TextMesh>();
-		//Debug.Log(_text.transform.rotation);
 		_text.transform.SetPositionAndRotation(
 			_text.transform.position
-			, new Quaternion(0.7f, 0, 0, 0.7f)
+			, rotation
 		);
 		_text.anchor = TextAnchor.MiddleCenter;
 		_text.color = Color.red;
-		_text.text = string.Format(
-			"Initialize{0}{1}{0}{2}"
-			, Environment.NewLine
-			, name
-			, DateTime.Now.ToString("HHmmss.fff")
-		);
-
-		//_plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-		//_meshRenderer = _plane.AddComponent<MeshRenderer>();
+		_text.text = name;
 
 		gameObject.name = name;
 		gameObject.SetActive(true);
 
-		float off = 1 * z + offset;
 
 		Vector2dBounds bb = Conversions.TileIdToBounds(x, y, z);
-		Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
+		float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.Center.y, z);
+		float metersPerTile = metersPerTilePixel * 256f/10f;
+		gameObject.transform.localScale = new Vector3(metersPerTilePixel, 1, metersPerTilePixel);
+		Vector2d centerLatLng = Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
+		Vector2d centerWebMerc = Conversions.LatLonToMeters(bb.Center);
 
-		Debug.Log("bbox:" + bb);
-		Debug.Log("bbox.center:" + bb.Center);
-		Vector2d centerWM = Conversions.LatLonToMeters(bb.Center);
-		Debug.Log("bbox.center[WebMerc]:" + centerWM);
+		string logMsg = string.Format(
+			"bbox:{1}{0}bb.center:{2}{0}centerLatLng:{3}{0}centerWebMerc:{4}{0}m/pix:{5}{0}m/tile:{6}"
+			, Environment.NewLine
+			, bb
+			, bb.Center
+			, centerLatLng
+			, centerWebMerc
+			, metersPerTilePixel
+			, metersPerTile
+		);
+		Debug.Log(logMsg);
 
 		Vector3 position = new Vector3(
-			x * off
+			(float)(centerWebMerc.x / 256d)
 			, 0
-			, y * off
+			, (float)(centerWebMerc.y / 256d)
 		);
+
 		transform.localPosition = position;
 	}
 

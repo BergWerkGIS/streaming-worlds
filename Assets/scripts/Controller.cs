@@ -21,7 +21,10 @@ public class Controller : MonoBehaviour
 	private int _lastZoom = int.MinValue;
 	private Dictionary<CanonicalTileId, Tile> _tiles = new Dictionary<CanonicalTileId, Tile>();
 	private GameObject _root;
-	private Vector2dBounds _worldBounds;
+	private Vector2dBounds _boundsWorld;
+	private Vector2dBounds _boundsSmall;
+	private Vector2dBounds _boundsMap;
+	private object _lock = new object();
 
 
 	// Use this for initialization
@@ -30,10 +33,18 @@ public class Controller : MonoBehaviour
 		Hud.text = "Start";
 		_root = new GameObject("root");
 
-		_worldBounds = new Vector2dBounds(
+		_boundsWorld = new Vector2dBounds(
 			new Vector2d(-180, -90)
 			, new Vector2d(180, 90)
 		);
+
+		_boundsSmall = new Vector2dBounds(
+			new Vector2d(-10, -10)
+			, new Vector2d(10, 10)
+		);
+
+		//_boundsMap = _boundsWorld;
+		_boundsMap = _boundsSmall;
 	}
 
 	void Update()
@@ -44,7 +55,7 @@ public class Controller : MonoBehaviour
 		Hud.text = string.Format("camera.y:{0:0.00} zoom:{1}", y, currentZoom);
 
 		if (_lastZoom == currentZoom) { return; }
-		if (currentZoom > 4)
+		if (currentZoom > 9)
 		{
 			_lastZoom = currentZoom;
 			Debug.LogWarning("level has too many tiles - not creating any");
@@ -54,55 +65,59 @@ public class Controller : MonoBehaviour
 
 		Debug.LogFormat("new zoom[{0}]: adding/removing tiles", currentZoom);
 
-		HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(_worldBounds, currentZoom);
+		HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(_boundsMap, currentZoom);
 		Debug.Log("tiles needed:" + tilesNeeded.Count);
 
-		var deactivate = _tiles.Where(t => t.Key.Z == _lastZoom).ToList();
-		foreach (var d in deactivate)
+		lock (_lock)
 		{
-			d.Value.SetActive(false);
-			Destroy(d.Value.gameObject);
-			_tiles.Remove(d.Key);
-		}
-
-		foreach (var tileId in tilesNeeded)
-		{
-			Tile tile;
-			if (!_tiles.TryGetValue(tileId, out tile))
+			var deactivate = _tiles.Where(t => t.Key.Z == _lastZoom).ToList();
+			foreach (var d in deactivate)
 			{
-				GameObject plane = GameObject.CreatePrimitive(PrimitiveType.Plane);
-				GameObject goTxt = new GameObject("text");
-				//goTxt.transform.parent = plane.transform;
-				var textMesh = goTxt.AddComponent<TextMesh>();
-				//var meshRenderer = goTxt.AddComponent<MeshRenderer>();
-				//tile = plane.AddComponent<Tile>();
-				tile = new GameObject().AddComponent<Tile>();
-				//tile = _root.AddComponent<Tile>();
-				//goTxt.transform.parent = tile.transform;
-				//tile.transform.parent = plane.transform;
-				//plane.transform.parent = _root.transform;
-				tile.transform.parent = _root.transform;
-				plane.transform.parent = tile.transform;
-				//goTxt.transform.parent = plane.transform;
-				goTxt.transform.parent = tile.transform;
-
-				float scale = 1f;
-				if (0 != currentZoom)
-				{
-					scale = (float)(1.0 / Math.Pow(2d, (double)currentZoom));
-					Debug.Log("scale:" + scale);
-					Vector3 s = new Vector3(scale, 1, scale);
-					tile.transform.localScale = s;
-					plane.transform.localScale = s;
-					textMesh.fontSize = 10;
-				}
-
-				tile.Initialize(currentZoom, tileId.X, tileId.Y, scale/2f);
+				d.Value.SetActive(false);
+				Destroy(d.Value.gameObject);
+				_tiles.Remove(d.Key);
 			}
-			tile.SetActive(true);
-			_tiles.Add(tileId, tile);
-		}
 
+			foreach (var tileId in tilesNeeded)
+			{
+				Tile tile;
+				if (!_tiles.TryGetValue(tileId, out tile))
+				{
+
+					GameObject quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+					quad.name = "tile-data";
+					GameObject goTxt = new GameObject("text");
+					//goTxt.transform.parent = plane.transform;
+					var textMesh = goTxt.AddComponent<TextMesh>();
+					//var meshRenderer = goTxt.AddComponent<MeshRenderer>();
+					//tile = plane.AddComponent<Tile>();
+					tile = new GameObject().AddComponent<Tile>();
+					//tile = _root.AddComponent<Tile>();
+					//goTxt.transform.parent = tile.transform;
+					//tile.transform.parent = plane.transform;
+					//plane.transform.parent = _root.transform;
+					tile.transform.parent = _root.transform;
+					quad.transform.parent = tile.transform;
+					//goTxt.transform.parent = plane.transform;
+					goTxt.transform.parent = tile.transform;
+
+					float scale = 1f;
+					if (0 != currentZoom)
+					{
+						//scale = (float)(1.0 / Math.Pow(2d, (double)currentZoom));
+						//Debug.Log("scale:" + scale);
+						//Vector3 s = new Vector3(scale, 1, scale);
+						//tile.transform.localScale = s;
+						//quad.transform.localScale = s;
+						//textMesh.fontSize = 10;
+					}
+
+					tile.Initialize(currentZoom, tileId.X, tileId.Y);
+					_tiles.Add(tileId, tile);
+				}
+				tile.SetActive(true);
+			}
+		}
 		_lastZoom = currentZoom;
 	}
 
