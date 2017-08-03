@@ -16,9 +16,6 @@ public class Tile : MonoBehaviour
 	public int Zoom { get { return _zoom; } }
 
 
-	private TextMesh _text;
-	//private GameObject _plane;
-	//private MeshRenderer _meshRenderer;
 	private int _zoom;
 
 
@@ -26,54 +23,71 @@ public class Tile : MonoBehaviour
 	{
 		_zoom = z;
 		string name = string.Format("{0}/{1}/{2}", z, x, y);
-
 		Quaternion rotation = new Quaternion(0.7f, 0, 0, 0.7f);
 
-		GameObject tileRepresentation = transform.Find("tile-data").gameObject;
+
+		GameObject tileRepresentation = GameObject.CreatePrimitive(PrimitiveType.Quad);
+		tileRepresentation.transform.parent = transform;
+		tileRepresentation.name = "tile-data";
 		tileRepresentation.transform.SetPositionAndRotation(
 			tileRepresentation.transform.position
 			, rotation
 		);
 
-		_text = transform.Find("text").GetComponent<TextMesh>();
-		_text.transform.SetPositionAndRotation(
-			_text.transform.position
+
+		GameObject goTxt = new GameObject("text");
+		goTxt.transform.parent = transform;
+		goTxt.transform.localScale = new Vector3(0.2f, 0.2f);
+		TextMesh text = goTxt.AddComponent<TextMesh>();
+		text.transform.SetPositionAndRotation(
+			text.transform.position
 			, rotation
 		);
-		_text.anchor = TextAnchor.MiddleCenter;
-		_text.color = Color.red;
-		_text.text = name;
-
-		gameObject.name = name;
-		gameObject.SetActive(true);
+		text.anchor = TextAnchor.MiddleCenter;
+		text.color = Color.red;
+		//text.text = name;
+		text.text = z.ToString();
 
 
 		Vector2dBounds bb = Conversions.TileIdToBounds(x, y, z);
-		float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.Center.y, z);
-		float metersPerTile = metersPerTilePixel * 256f/10f;
-		gameObject.transform.localScale = new Vector3(metersPerTilePixel, 1, metersPerTilePixel);
+		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.Center.y, z);
+		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.South, z);
+		float metersPerPixel = Conversions.GetTileScaleInMeters(z);
+		double scaleDownFactor = 100d;
+		float metersPerTile = (float)((metersPerPixel * 256d) / scaleDownFactor);
+
+		//Vector3 unityScale = new Vector3(metersPerTile, 1, metersPerTile);
+		//HACK use metersPerPixel as 'scale' to stay within Unity's float limits
+		Vector3 unityScale = new Vector3(metersPerPixel, 1, metersPerPixel);
+
+		transform.localScale = unityScale;
 		Vector2d centerLatLng = Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
 		Vector2d centerWebMerc = Conversions.LatLonToMeters(bb.Center);
 
 		string logMsg = string.Format(
-			"bbox:{1}{0}bb.center:{2}{0}centerLatLng:{3}{0}centerWebMerc:{4}{0}m/pix:{5}{0}m/tile:{6}"
+			"{1}{0}bbox:{2}{0}bb.center:{3}{0}centerLatLng:{4}{0}centerWebMerc:{5}{0}m/pix:{6}{0}m/tile:{7}"
 			, Environment.NewLine
+			, string.Format("{0}/{1}/{2}", z, x, y)
 			, bb
 			, bb.Center
 			, centerLatLng
 			, centerWebMerc
-			, metersPerTilePixel
+			, metersPerPixel
 			, metersPerTile
 		);
-		Debug.Log(logMsg);
+		//Debug.Log(logMsg);
 
 		Vector3 position = new Vector3(
-			(float)(centerWebMerc.x / 256d)
+			(float)(centerWebMerc.x / 256d) // divide by 256 as we are using metersPerPixel for scale
 			, 0
-			, (float)(centerWebMerc.y / 256d)
+			, (float)(centerWebMerc.y / 256d) // divide by 256 as we are using metersPerPixel for scale
 		);
 
 		transform.localPosition = position;
+
+		gameObject.name = name;
+		gameObject.SetActive(true);
+
 	}
 
 
