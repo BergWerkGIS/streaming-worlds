@@ -10,7 +10,6 @@ namespace Mapbox.Unity.Utilities
 	using System;
 	using Mapbox.Utils;
 	using UnityEngine;
-	using System.Collections.Generic;
 
 	/// <summary>
 	/// A set of Geo and Terrain Conversion utils.
@@ -18,39 +17,9 @@ namespace Mapbox.Unity.Utilities
 	public static class Conversions
 	{
 		private const int TileSize = 256;
-		//private const int EarthRadius = 6378137;
-		/// <summary>according to https://wiki.openstreetmap.org/wiki/Zoom_levels</summary>
-		private const double EarthRadius = 6372798.2;
+		private const int EarthRadius = 6378137;
 		private const double InitialResolution = 2 * Math.PI * EarthRadius / TileSize;
 		private const double OriginShift = 2 * Math.PI * EarthRadius / 2;
-
-		/// <summary>according to https://wiki.openstreetmap.org/wiki/Zoom_levels</summary>
-		private static Dictionary<int, float> TileScaleWikipedia = new Dictionary<int, float>()
-		{
-			{0, 156412 },
-			{1, 78206 },
-			{2, 39103 },
-			{3, 19551},
-			{4, 9776 },
-			{5, 4888 },
-			{6, 2444 },
-			{7, 1222},
-			{8, 610.984f},
-			{9, 305.492f},
-			{10, 152.746f},
-			{11, 76.373f},
-			{12, 38.187f},
-			{13, 19.093f},
-			{14, 9.547f},
-			{15, 4.773f},
-			{16, 2.387f},
-			{17, 1.193f},
-			{18, 0.596f},
-			{19, 0.298f},
-			{20, 0.149f},
-			{21, 0.0745f},
-			{22, 0.03725f}
-		};
 
 		/// <summary>
 		/// Converts <see cref="T:Mapbox.Utils.Vector2d"/> struct, WGS84
@@ -58,7 +27,7 @@ namespace Mapbox.Unity.Utilities
 		/// </summary>
 		/// <param name="v"> The <see cref="T:Mapbox.Utils.Vector2d"/>. </param>
 		/// <returns> A <see cref="T:UnityEngine.Vector2d"/> of coordinates in meters. </returns>
-		public static Vector2d LatLonToMeters(Vector2d v)
+		private static Vector2d LatLonToMeters(Vector2d v)
 		{
 			return LatLonToMeters(v.x, v.y);
 		}
@@ -241,7 +210,7 @@ namespace Mapbox.Unity.Utilities
 		{
 			var bb = TileIdToBounds(x, y, zoom);
 			var center = bb.Center;
-			return new Vector2d(center.x, center.y);
+			return new Vector2d((float)center.x, (float)center.y);
 		}
 
 		/// <summary>
@@ -253,15 +222,7 @@ namespace Mapbox.Unity.Utilities
 		/// <returns> Meters per pixel. </returns>
 		public static float GetTileScaleInMeters(float latitude, int zoom)
 		{
-			//return 40075000 * Mathf.Cos(Mathf.Deg2Rad * latitude) / Mathf.Pow(2f, zoom + 8);
-			//return (float)(40075000d * Mathf.Cos(Mathf.Deg2Rad * latitude) / Mathf.Pow(2f, zoom + 8));
-			//return (float)(40075016.685578d * Mathf.Cos(Mathf.Deg2Rad * latitude) / Mathf.Pow(2f, zoom + 8));
-			return (float)(40075016.685578d * Math.Cos(Mathf.Deg2Rad * latitude) / Math.Pow(2f, zoom + 8));
-		}
-
-		public static float GetTileScaleInMeters(int zoom)
-		{
-			return TileScaleWikipedia[zoom];
+			return 40075000 * Mathf.Cos(Mathf.Deg2Rad * latitude) / Mathf.Pow(2f, zoom + 8);
 		}
 
 		/// <summary>
@@ -305,15 +266,15 @@ namespace Mapbox.Unity.Utilities
 		{
 			var res = Resolution(zoom);
 			var met = new Vector2d();
-			met.x = (p.x * res - OriginShift);
-			met.y = -(p.y * res - OriginShift);
+			met.x = (float)(p.x * res - OriginShift);
+			met.y = (float)-(p.y * res - OriginShift);
 			return met;
 		}
 
 		private static Vector2d MetersToPixels(Vector2d m, int zoom)
 		{
 			var res = Resolution(zoom);
-			var pix = new Vector2d(((m.x + OriginShift) / res), ((-m.y + OriginShift) / res));
+			var pix = new Vector2d((float)((m.x + OriginShift) / res), (float)((-m.y + OriginShift) / res));
 			return pix;
 		}
 

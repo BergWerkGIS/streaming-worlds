@@ -15,7 +15,7 @@
 		string _latitudeLongitudeString;
 
 		[SerializeField]
-		[Range(0, 18)]
+		[Range(0, 22)]
 		int _zoom;
 		public int Zoom
 		{
@@ -25,7 +25,7 @@
 			}
 			set
 			{
-				_zoom = Mathf.Clamp(value, 0, 18);
+				_zoom = value;
 			}
 		}
 
@@ -75,7 +75,7 @@
 			}
 		}
 
-		float _worldRelativeScale = 1f;
+		float _worldRelativeScale;
 		public float WorldRelativeScale
 		{
 			get
@@ -108,7 +108,7 @@
 				_tileProvider.OnTileRemoved -= TileProvider_OnTileRemoved;
 			}
 
-			_mapVisualizer.Clear();
+			_mapVisualizer.Destroy();
 		}
 
 		// This is the part that is abstract?
@@ -119,37 +119,14 @@
 
 			var referenceTileRect = Conversions.TileBounds(TileCover.CoordinateToTileId(_mapCenterLatitudeLongitude, _zoom));
 			_mapCenterMercator = referenceTileRect.Center;
-			_root.localPosition = -Conversions.GeoToWorldPosition(_mapCenterLatitudeLongitude.x, _mapCenterLatitudeLongitude.y, _mapCenterMercator, _worldRelativeScale).ToVector3xz();
 
-			//_worldRelativeScale = (float)(_unityTileSize / referenceTileRect.Size.x);
-			//Root.localScale = Vector3.one * _worldRelativeScale;
+			_worldRelativeScale = (float)(_unityTileSize / referenceTileRect.Size.x);
+			Root.localScale = Vector3.one * _worldRelativeScale;
 
 			_mapVisualizer.Initialize(this, _fileSouce);
 			_tileProvider.Initialize(this);
-			_lastZoom = _zoom;
+
 			OnInitialized();
-		}
-
-		int _lastZoom;
-		void Update()
-		{
-			if (_zoom != _lastZoom)
-			{
-				var referenceTileRect = Conversions.TileBounds(TileCover.CoordinateToTileId(_mapCenterLatitudeLongitude, _zoom));
-				//_worldRelativeScale = (float)(_unityTileSize / referenceTileRect.Size.x);
-				_mapCenterMercator = referenceTileRect.Center;
-				var position = -Conversions.GeoToWorldPosition(_mapCenterLatitudeLongitude.x, _mapCenterLatitudeLongitude.y, _mapCenterMercator, _worldRelativeScale).ToVector3xz();
-				position.y = _root.localPosition.y;
-				_root.localPosition = position;
-
-				//_worldRelativeScale = (float)(_unityTileSize / referenceTileRect.Size.x);
-				//Root.localScale = Vector3.one* _worldRelativeScale;
-				//_mapVisualizer.Clear();
-				_tileProvider.Clear();
-				_tileProvider.Initialize(this);
-				_lastZoom = _zoom;
-				//_worldHeightFixed = false;
-			}
 		}
 
 		void TileProvider_OnTileAdded(UnwrappedTileId tileId)
@@ -158,7 +135,7 @@
 			{
 				_worldHeightFixed = true;
 				var tile = _mapVisualizer.LoadTile(tileId);
-				if (tile.HeightDataState == MeshGeneration.Enums.TilePropertyState.Loaded)
+				if(tile.HeightDataState == MeshGeneration.Enums.TilePropertyState.Loaded)
 				{
 					var h = tile.QueryHeightData(.5f, .5f);
 					Root.transform.position = new Vector3(

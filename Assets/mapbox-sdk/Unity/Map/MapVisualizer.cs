@@ -86,14 +86,12 @@ namespace Mapbox.Unity.MeshGeneration
 			}
 		}
 
-		internal void Clear()
+		internal void Destroy()
 		{
 			for (int i = 0; i < _factories.Length; i++)
 			{
 				if (_factories[i] != null)
-				{
 					_factories[i].OnFactoryStateChanged -= UpdateState;
-				}
 			}
 		}
 
