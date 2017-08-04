@@ -1,5 +1,6 @@
 ﻿using Mapbox.Map;
 using Mapbox.Unity;
+using Mapbox.Unity.Utilities;
 using Mapbox.Utils;
 using System;
 using System.Collections;
@@ -54,13 +55,17 @@ public class Controller : MonoBehaviour
 
 		float y = _referenceCamera.transform.localPosition.y;
 		//int currentZoom = 20 - (int)(Math.Floor(y) / 500 * 1.5);
-		int currentZoom = 20 - (10 + (int)(y / 10000 * 10));
+		int currentZoom = 20 - (10 + (int)(y / 20000 * 10));
+
+		Vector3 viewPortLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
+		Vector3 viewPortUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
+
 		Hud.text = string.Format(
 			"camera.y:{0:0.00} zoom:{1} viewport:{2}/{3}"
 			, y
 			, currentZoom
-			, _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y))
-			, _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y))
+			, viewPortLL
+			, viewPortUR
 		);
 
 		if (_creatingTiles) { return; }
@@ -72,14 +77,36 @@ public class Controller : MonoBehaviour
 
 			if (_lastZoom == currentZoom) { return; }
 
+			//revert downscaling and get back to full WebMerc coords
+			Vector2dBounds viewPortWebMerc = new Vector2dBounds(
+				new Vector2d(viewPortLL.x *= 256, viewPortLL.z *= 256)
+				, new Vector2d(viewPortUR.x *= 256, viewPortUR.z *= 256)
+			);
+			Vector2dBounds viewPortLatLng = new Vector2dBounds(
+				Conversions.MetersToLatLon(viewPortWebMerc.SouthWest)
+				, Conversions.MetersToLatLon(viewPortWebMerc.NorthEast)
+			);
+
 			if (currentZoom > 10)
 			{
 				Debug.LogWarningFormat("new zoom[{0}] too high, TileCover.Get() will crash", currentZoom);
 				return;
 			}
 
+			Vector2dBounds requestBounds = _boundsMap;
+
+			if (
+				viewPortLatLng.West > requestBounds.West
+				&& viewPortLatLng.East < requestBounds.East
+				&& viewPortLatLng.South > requestBounds.South
+				&& viewPortLatLng.North < requestBounds.North
+			)
+			{
+				requestBounds = viewPortLatLng;
+			}
+
 			//TileCover.Get() crashes if there are too many tiles
-			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(_boundsMap, currentZoom);
+			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(requestBounds, currentZoom);
 
 			if (tilesNeeded.Count > 256)
 			{
