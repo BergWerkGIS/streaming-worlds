@@ -73,7 +73,7 @@
 				//don't go below tile plane
 				if (localPosition.y < _referenceCamera.nearClipPlane) { localPosition.y = _referenceCamera.nearClipPlane * 1.01f; }
 				//don't go out beyond world extent
-				if (localPosition.y > 20) { localPosition.y = 20; }
+				if (localPosition.y > 10000) { localPosition.y = 10000; }
 				transform.localPosition = localPosition;
 			}
 		}

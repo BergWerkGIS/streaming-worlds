@@ -1,4 +1,7 @@
-﻿using Mapbox.Unity.Utilities;
+﻿using Mapbox.Map;
+using Mapbox.Platform;
+using Mapbox.Unity;
+using Mapbox.Unity.Utilities;
 using Mapbox.Utils;
 using System;
 using System.Collections;
@@ -12,17 +15,9 @@ public class Tile : MonoBehaviour
 	void Update() { }
 
 
-
-	public int Zoom { get { return _zoom; } }
-
-
-	private int _zoom;
-
-
-	public void Initialize(int z, int x, int y)
+	public void Initialize(CanonicalTileId tileId, MapboxAccess mbxAccess)
 	{
-		_zoom = z;
-		string name = string.Format("{0}/{1}/{2}", z, x, y);
+		string name = tileId.ToString();
 		Quaternion rotation = new Quaternion(0.7f, 0, 0, 0.7f);
 
 
@@ -46,35 +41,36 @@ public class Tile : MonoBehaviour
 		text.anchor = TextAnchor.MiddleCenter;
 		text.color = Color.red;
 		//text.text = name;
-		text.text = z.ToString();
+		text.text = tileId.Z.ToString();
 
 
-		Vector2dBounds bb = Conversions.TileIdToBounds(x, y, z);
+		Vector2dBounds bb = Conversions.TileIdToBounds(tileId.X, tileId.Y, tileId.Z);
 		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.Center.y, z);
 		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.South, z);
-		float metersPerPixel = Conversions.GetTileScaleInMeters(z);
-		double scaleDownFactor = 100d;
-		float metersPerTile = (float)((metersPerPixel * 256d) / scaleDownFactor);
+		float metersPerPixel = Conversions.GetTileScaleInMeters(tileId.Z);
+
+		//double scaleDownFactor = 100d;
+		//float metersPerTile = (float)((metersPerPixel * 256d) / scaleDownFactor);
 
 		//Vector3 unityScale = new Vector3(metersPerTile, 1, metersPerTile);
 		//HACK use metersPerPixel as 'scale' to stay within Unity's float limits
 		Vector3 unityScale = new Vector3(metersPerPixel, 1, metersPerPixel);
 
 		transform.localScale = unityScale;
-		Vector2d centerLatLng = Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
+		//Vector2d centerLatLng = Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
 		Vector2d centerWebMerc = Conversions.LatLonToMeters(bb.Center);
 
-		string logMsg = string.Format(
-			"{1}{0}bbox:{2}{0}bb.center:{3}{0}centerLatLng:{4}{0}centerWebMerc:{5}{0}m/pix:{6}{0}m/tile:{7}"
-			, Environment.NewLine
-			, string.Format("{0}/{1}/{2}", z, x, y)
-			, bb
-			, bb.Center
-			, centerLatLng
-			, centerWebMerc
-			, metersPerPixel
-			, metersPerTile
-		);
+		//string logMsg = string.Format(
+		//	"{1}{0}bbox:{2}{0}bb.center:{3}{0}centerLatLng:{4}{0}centerWebMerc:{5}{0}m/pix:{6}{0}m/tile:{7}"
+		//	, Environment.NewLine
+		//	, string.Format("{0}/{1}/{2}", z, x, y)
+		//	, bb
+		//	, bb.Center
+		//	, centerLatLng
+		//	, centerWebMerc
+		//	, metersPerPixel
+		//	, metersPerTile
+		//);
 		//Debug.Log(logMsg);
 
 		Vector3 position = new Vector3(
@@ -88,6 +84,25 @@ public class Tile : MonoBehaviour
 		gameObject.name = name;
 		gameObject.SetActive(true);
 
+		TileResource tileResource = TileResource.MakeRaster(tileId, null);
+
+		mbxAccess.Request(
+			tileResource.GetUrl(),
+			(Response r) =>
+			{
+				Debug.LogFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
+				if (r.HasError) { return; }
+				MeshRenderer mr = tileRepresentation.GetComponent<MeshRenderer>();
+				if (null == mr) { return; }
+				Texture2D texture = new Texture2D(0, 0, TextureFormat.RGB24, true);
+				texture.wrapMode = TextureWrapMode.Clamp;
+				texture.LoadImage(r.Data);
+				mr.material.mainTexture = texture;
+			},
+			30,
+			tileId,
+			"my-map-id"
+		);
 	}
 
 

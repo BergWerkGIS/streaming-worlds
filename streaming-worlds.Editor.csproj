@@ -191,6 +191,7 @@
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\VectorTileFactoryEditor.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\Resources\Mapbox\MapboxConfiguration.txt" />
     <None Include="Assets\mapbox-sdk\Core\Plugins\link.xml" />
     <None Include="Assets\mapbox-sdk\Fonts\OpenSansLic.txt" />
   </ItemGroup>
