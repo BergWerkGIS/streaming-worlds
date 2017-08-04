@@ -169,18 +169,26 @@
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Tests\UnitTests\Editor\Utils.cs" />
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Tests\UnitTests\Editor\VectorTileTest.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\AddMonoBehavioursModifierDrawer.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\Build\Mapbox_Android_prebuild_checks.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\Build\Mapbox_iOS_build.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\ClearMbTilesCache.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\FactoryEditor.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\FeatureBehaviourEditor.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\FlatSphereTerrainFactoryEditor.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\FlatTerrainFactoryEditor.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\GeocodeAttributeDrawer.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\GeocodeAttributeSearchWindow.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\LayerModifierEditor.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\LowPolyTerrainFactoryEditor.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\MapImageFactoryEditor.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\MapboxConfigurationWindow.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\MeshFactoryEditor.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\StyleOptimizedVectorTileFactoryEditor.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\StyleSearchAttributeDrawer.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\StyleSearchWindow.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Editor\TerrainFactoryEditor.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\UnitTests\DuplicateAndroidLibraries.cs.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Editor\VectorTileFactoryEditor.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\mapbox-sdk\Core\Plugins\link.xml" />

@@ -157,6 +157,7 @@
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Map\RasterTile.cs" />
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Map\RawPngRasterTile.cs" />
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Map\RetinaRasterTile.cs" />
+    <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Map\StyleOptimizedVectorTile.cs" />
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Map\Tile.cs" />
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Map\TileCover.cs" />
     <Compile Include="Assets\mapbox-sdk\Core\mapbox-sdk-cs\Map\TileResource.cs" />
@@ -205,11 +206,11 @@
     <Compile Include="Assets\mapbox-sdk\Unity\Map\AbstractMap.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Map\AbstractTileProvider.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Map\CameraBoundsTileProvider.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Map\GlobeTileProvider.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Map\IMap.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Map\ITileProvider.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Map\MapVisualizer.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Map\RangeTileProvider.cs" />
-    <Compile Include="Assets\mapbox-sdk\Unity\Map\TileCoverTileProvider.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MapboxAccess.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Components\FeatureBehaviour.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Components\TextureSelector.cs" />
@@ -221,10 +222,14 @@
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Enums\TilePropertyState.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\AbstractTileFactory.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\DirectionsFactory.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\FlatSphereTerrainFactory.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\FlatTerrainFactory.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\LowPolyTerrainFactory.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\MapImageFactory.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\MeshFactory.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\StyleOptimizedVectorTileFactory.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\TerrainFactory.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Factories\VectorTileFactory.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Filters\FilterBase.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Filters\HeightFilter.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\MeshGeneration\Filters\TypeFilter.cs" />
@@ -268,6 +273,7 @@
     <Compile Include="Assets\mapbox-sdk\Unity\Utilities\Runnable.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Utilities\Singleton.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Utilities\SingletonScriptableObject.cs" />
+    <Compile Include="Assets\mapbox-sdk\Unity\Utilities\StyleSearchAttribute.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Utilities\TelemetryConfigurationButton.cs" />
     <Compile Include="Assets\mapbox-sdk\Unity\Utilities\VectorExtensions.cs" />
     <Compile Include="Assets\scripts\CameraMovement.cs" />
