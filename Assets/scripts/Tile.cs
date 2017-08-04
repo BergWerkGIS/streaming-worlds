@@ -14,6 +14,18 @@ public class Tile : MonoBehaviour
 	void Start() { }
 	void Update() { }
 
+	private void OnDestroy()
+	{
+		if (null != _texture)
+		{
+			Destroy(_texture);
+			_texture = null;
+		}
+	}
+
+
+	private Texture2D _texture;
+
 
 	public void Initialize(CanonicalTileId tileId, MapboxAccess mbxAccess)
 	{
@@ -90,14 +102,18 @@ public class Tile : MonoBehaviour
 			tileResource.GetUrl(),
 			(Response r) =>
 			{
-				Debug.LogFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
-				if (r.HasError) { return; }
+
+				if (r.HasError)
+				{
+					Debug.LogFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
+					return;
+				}
 				MeshRenderer mr = tileRepresentation.GetComponent<MeshRenderer>();
 				if (null == mr) { return; }
-				Texture2D texture = new Texture2D(0, 0, TextureFormat.RGB24, true);
-				texture.wrapMode = TextureWrapMode.Clamp;
-				texture.LoadImage(r.Data);
-				mr.material.mainTexture = texture;
+				_texture = new Texture2D(0, 0, TextureFormat.RGB24, true);
+				_texture.wrapMode = TextureWrapMode.Clamp;
+				_texture.LoadImage(r.Data);
+				mr.material.mainTexture = _texture;
 			},
 			30,
 			tileId,

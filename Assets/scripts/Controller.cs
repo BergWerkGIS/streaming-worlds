@@ -53,7 +53,8 @@ public class Controller : MonoBehaviour
 	{
 
 		float y = _referenceCamera.transform.localPosition.y;
-		int currentZoom = 20 - ((int)Math.Floor(y)) / 500;
+		//int currentZoom = 20 - (int)(Math.Floor(y) / 500 * 1.5);
+		int currentZoom = 20 - (10 + (int)(y / 10000 * 10));
 		Hud.text = string.Format(
 			"camera.y:{0:0.00} zoom:{1} viewport:{2}/{3}"
 			, y
@@ -77,22 +78,19 @@ public class Controller : MonoBehaviour
 				return;
 			}
 
+			//TileCover.Get() crashes if there are too many tiles
 			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(_boundsMap, currentZoom);
-
-			Debug.LogFormat("new zoom[{0}], tiles needed:{1}", currentZoom, tilesNeeded.Count);
 
 			if (tilesNeeded.Count > 256)
 			{
 				_lastZoom = currentZoom;
-				Debug.LogWarning("level has too many tiles - not creating any");
+				Debug.LogWarningFormat("level[{0}] has too many tiles[{1}]: not creating any", currentZoom, tilesNeeded.Count);
 				return;
 			}
 
+			//the hard way, just destroy all tiles
+			foreach (Transform child in _root.transform) { Destroy(child.gameObject); }
 
-			foreach (Transform child in _root.transform)
-			{
-				Destroy(child.gameObject);
-			}
 
 			foreach (var tileId in tilesNeeded)
 			{
@@ -101,10 +99,10 @@ public class Controller : MonoBehaviour
 				tile.Initialize(tileId, _mbxAccess);
 				tile.SetActive(true);
 			}
-			_lastZoom = currentZoom;
 		}
 		finally
 		{
+			_lastZoom = currentZoom;
 			_creatingTiles = false;
 		}
 	}
