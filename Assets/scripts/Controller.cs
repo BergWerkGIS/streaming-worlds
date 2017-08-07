@@ -62,7 +62,9 @@ public class Controller : MonoBehaviour
 		float maxZoom = 10;
 		float minZoom = 0;
 
-		int currentZoom = 20 - (int)((maxZoom - minZoom) + (y / (maxYcamera-minYCamera) * (maxZoom - minZoom)));
+		int currentZoom = 20 - (int)((maxZoom - minZoom) + (y / (maxYcamera - minYCamera) * (maxZoom - minZoom)));
+
+		if (currentZoom < minZoom || currentZoom > maxZoom) { return; }
 
 		Vector3 viewPortLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
 		Vector3 viewPortUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
