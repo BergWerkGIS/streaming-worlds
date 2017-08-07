@@ -55,7 +55,14 @@ public class Controller : MonoBehaviour
 
 		float y = _referenceCamera.transform.localPosition.y;
 		//int currentZoom = 20 - (int)(Math.Floor(y) / 500 * 1.5);
-		int currentZoom = 20 - (10 + (int)(y / 20000 * 10));
+
+		// fit zoom levels (minZoom, maxZoom) into camera range (near/far-ClipPlane)
+		float maxYcamera = _referenceCamera.farClipPlane;
+		float minYCamera = _referenceCamera.nearClipPlane;
+		float maxZoom = 10;
+		float minZoom = 0;
+
+		int currentZoom = 20 - (int)((maxZoom - minZoom) + (y / (maxYcamera-minYCamera) * (maxZoom - minZoom)));
 
 		Vector3 viewPortLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
 		Vector3 viewPortUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));

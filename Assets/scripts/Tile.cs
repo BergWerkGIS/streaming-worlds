@@ -59,7 +59,17 @@ public class Tile : MonoBehaviour
 		Vector2dBounds bb = Conversions.TileIdToBounds(tileId.X, tileId.Y, tileId.Z);
 		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.Center.y, z);
 		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.South, z);
-		float metersPerPixel = Conversions.GetTileScaleInMeters(tileId.Z);
+		float metersPerPixel = 0;
+		try
+		{
+			metersPerPixel = Conversions.GetTileScaleInMeters(tileId.Z);
+		}
+		catch (Exception ex)
+		{
+			Debug.LogWarning(tileId);
+			Debug.LogWarning(ex);
+			return;
+		}
 
 		//double scaleDownFactor = 100d;
 		//float metersPerTile = (float)((metersPerPixel * 256d) / scaleDownFactor);
@@ -114,6 +124,7 @@ public class Tile : MonoBehaviour
 				_texture.wrapMode = TextureWrapMode.Clamp;
 				_texture.LoadImage(r.Data);
 				mr.material.mainTexture = _texture;
+				//mr.material.shader = Shader.Find("Unlit/Transparent");
 			},
 			30,
 			tileId,
