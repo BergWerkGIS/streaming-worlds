@@ -18,6 +18,8 @@ namespace Mapbox.Unity.Utilities
 	public static class Conversions
 	{
 		private const int TileSize = 256;
+		private const double RadiansPerDegree = Math.PI / 180;
+		private const double DegreeEqualsRadians = 0.017453292519943;
 		//private const int EarthRadius = 6378137;
 		/// <summary>according to https://wiki.openstreetmap.org/wiki/Zoom_levels</summary>
 		private const double EarthRadius = 6372798.2;
@@ -76,6 +78,22 @@ namespace Mapbox.Unity.Utilities
 			var posy = Math.Log(Math.Tan((90 + lat) * Math.PI / 360)) / (Math.PI / 180);
 			posy = posy * OriginShift / 180;
 			return new Vector2d(posx, posy);
+
+
+			//double RadiansPerDegree = Math.PI / 180;
+			//double Rad = lat * RadiansPerDegree;
+			//double FSin = Math.Sin(Rad);
+			//double DegreeEqualsRadians = 0.017453292519943;
+			////double EarthsRadius = 6378137;
+			//double y = EarthRadius / 2.0 * Math.Log((1.0 + FSin) / (1.0 - FSin));
+			//double x = lon * DegreeEqualsRadians * EarthRadius;
+			//return new Vector2d(x, y);
+
+			//double lonRad = lon / 180d * Math.PI;
+			//double latRad = lat / 180d * Math.PI;
+			//double x = EarthRadius * lonRad;
+			//double y = EarthRadius * Math.Log((Math.Sin(latRad) + 1) / Math.Cos(latRad));
+			//return new Vector2d(x, y);
 		}
 
 		/// <summary>

@@ -80,7 +80,15 @@ public class Tile : MonoBehaviour
 
 		transform.localScale = unityScale;
 		//Vector2d centerLatLng = Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
+		Debug.LogFormat("bbox:{0}", bb);
+		Vector2d wmSW = Conversions.LatLonToMeters(bb.SouthWest);
+		Vector2d wmNE = Conversions.LatLonToMeters(bb.NorthEast);
+		Debug.LogFormat("sw:{0}   ne:{1}", wmSW, wmNE);
+		Debug.LogFormat("center, lng:{0} lat:{1}", bb.Center.x, bb.Center.y);
 		Vector2d centerWebMerc = Conversions.LatLonToMeters(bb.Center);
+		Debug.LogFormat("centerWebMerc, x:{0} y:{1} /256: {2}/{3}", centerWebMerc.x, centerWebMerc.y, centerWebMerc.x / 256, centerWebMerc.y / 256);
+
+
 
 		//string logMsg = string.Format(
 		//	"{1}{0}bbox:{2}{0}bb.center:{3}{0}centerLatLng:{4}{0}centerWebMerc:{5}{0}m/pix:{6}{0}m/tile:{7}"
