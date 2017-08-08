@@ -76,18 +76,19 @@ public class Tile : MonoBehaviour
 
 		//Vector3 unityScale = new Vector3(metersPerTile, 1, metersPerTile);
 		//HACK use metersPerPixel as 'scale' to stay within Unity's float limits
-		Vector3 unityScale = new Vector3(metersPerPixel, 1, metersPerPixel);
-
+		//Vector3 unityScale = new Vector3(metersPerPixel, 1, metersPerPixel);
+		//Vector3 unityScale = new Vector3(metersPerPixel*100, 1, metersPerPixel*100);
+		float unityTileScale = 400f;
+		Vector3 unityScale = new Vector3(unityTileScale, 1, unityTileScale);
 		transform.localScale = unityScale;
 		//Vector2d centerLatLng = Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
-		Debug.LogFormat("bbox:{0}", bb);
+		//Debug.LogFormat("bbox:{0}", bb);
 		Vector2d wmSW = Conversions.LatLonToMeters(bb.SouthWest);
 		Vector2d wmNE = Conversions.LatLonToMeters(bb.NorthEast);
-		Debug.LogFormat("sw:{0}   ne:{1}", wmSW, wmNE);
-		Debug.LogFormat("center, lng:{0} lat:{1}", bb.Center.x, bb.Center.y);
+		//Debug.LogFormat("sw:{0}   ne:{1}", wmSW, wmNE);
+		//Debug.LogFormat("center, lng:{0} lat:{1}", bb.Center.x, bb.Center.y);
 		Vector2d centerWebMerc = Conversions.LatLonToMeters(bb.Center);
-		Debug.LogFormat("centerWebMerc, x:{0} y:{1} /256: {2}/{3}", centerWebMerc.x, centerWebMerc.y, centerWebMerc.x / 256, centerWebMerc.y / 256);
-
+		//Debug.LogFormat("centerWebMerc, x:{0} y:{1} /256: {2}/{3}", centerWebMerc.x, centerWebMerc.y, centerWebMerc.x / 256, centerWebMerc.y / 256);
 
 
 		//string logMsg = string.Format(
@@ -103,11 +104,28 @@ public class Tile : MonoBehaviour
 		//);
 		//Debug.Log(logMsg);
 
-		Vector3 position = new Vector3(
-			(float)(centerWebMerc.x / 256d) // divide by 256 as we are using metersPerPixel for scale
-			, 0
-			, (float)(centerWebMerc.y / 256d) // divide by 256 as we are using metersPerPixel for scale
-		);
+		int maxTileCount = (int)Math.Pow(2, tileId.Z);
+		int shift = maxTileCount / 2;
+
+		//Vector3 position = new Vector3(
+		//	(float)(centerWebMerc.x / 1000) // divide by 256 as we are using metersPerPixel for scale
+		//	, 0
+		//	, (float)(centerWebMerc.y / 1000) // divide by 256 as we are using metersPerPixel for scale
+		//);
+
+		Vector3 position;
+		if (tileId.Z == 0)
+		{
+			position = new Vector3(0, 0, 0);
+		}
+		else
+		{
+			position = new Vector3(
+				(tileId.X - shift) * unityScale.x + (unityScale.x / 2)
+				, 0
+				, (maxTileCount - tileId.Y - (shift + 1)) * unityScale.x + (unityScale.x / 2)
+			);
+		}
 
 		transform.localPosition = position;
 

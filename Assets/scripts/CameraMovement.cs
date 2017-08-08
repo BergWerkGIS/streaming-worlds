@@ -75,10 +75,11 @@
 				z = 0;
 				Vector3 localPosition = transform.localPosition + transform.forward * y + (_originalRotation * new Vector3(x * _panSpeed, 0, z * _panSpeed));
 
-				//don't go below tile plane
-				if (localPosition.y < _referenceCamera.nearClipPlane) { localPosition.y = _referenceCamera.nearClipPlane * 1.01f; }
-				//don't go out beyond world extent
-				if (localPosition.y > _referenceCamera.farClipPlane) { localPosition.y = _referenceCamera.farClipPlane; }
+				////don't go below tile plane
+				//if (localPosition.y < _referenceCamera.nearClipPlane) { localPosition.y = _referenceCamera.nearClipPlane * 1.01f; }
+				////don't go out beyond world extent
+				//if (localPosition.y > _referenceCamera.farClipPlane) { localPosition.y = _referenceCamera.farClipPlane; }
+
 				transform.localPosition = localPosition;
 			}
 		}

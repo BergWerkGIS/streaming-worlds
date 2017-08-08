@@ -19,8 +19,16 @@ public class Controller : MonoBehaviour
 	[SerializeField]
 	public Text Hud;
 
+	[SerializeField]
+	public int _maxZoomLevel;
 
-	private int _lastZoom = int.MinValue;
+	[SerializeField]
+	public int _minZoomLevel;
+
+	[SerializeField]
+	public int _currentZoomLevel;
+
+
 	private GameObject _root;
 	private Vector2dBounds _boundsWorld;
 	private Vector2dBounds _boundsSmall;
@@ -31,7 +39,23 @@ public class Controller : MonoBehaviour
 	// Use this for initialization
 	void Start()
 	{
+		if (null == _referenceCamera)
+		{
+			Debug.LogError("no reference camera");
+			return;
+		}
+
 		_mbxAccess = MapboxAccess.Instance;
+
+
+		_maxZoomLevel = _maxZoomLevel == 0 ? 10 : _maxZoomLevel;
+		//_minZoomLevel = _minZoomLevel == 0 ? 10 : _minZoomLevel;
+		_currentZoomLevel = _currentZoomLevel == 0 ? 4 : _currentZoomLevel;
+
+		Vector3 localPosition = _referenceCamera.transform.position;
+		localPosition.y = 750;
+		_referenceCamera.transform.localPosition = localPosition;
+
 
 		Hud.text = "Start";
 		_root = new GameObject("root");
@@ -42,49 +66,76 @@ public class Controller : MonoBehaviour
 		//);
 
 		_boundsSmall = new Vector2dBounds(
-			new Vector2d(-5, -5)
+			new Vector2d(-5,-5)
 			, new Vector2d(5, 5)
 		);
 
 		//_boundsMap = _boundsWorld;
 		_boundsMap = _boundsSmall;
+		loadTiles();
 	}
 
 	void Update()
 	{
 
-		float y = _referenceCamera.transform.localPosition.y;
-		//int currentZoom = 20 - (int)(Math.Floor(y) / 500 * 1.5);
+			float y = _referenceCamera.transform.localPosition.y;
 
-		// fit zoom levels (minZoom, maxZoom) into camera range (near/far-ClipPlane)
-		float maxYcamera = _referenceCamera.farClipPlane;
-		float minYCamera = _referenceCamera.nearClipPlane;
-		float maxZoom = 10;
-		float minZoom = 0;
+		try
+		{
+			if (_creatingTiles) { return; }
 
-		int currentZoom = 20 - (int)((maxZoom - minZoom) + (y / (maxYcamera - minYCamera) * (maxZoom - minZoom)));
+			//camera moves within one zoom level, don't do anything
+			if (y > 500 & y < 1000) { return; }
 
-		if (currentZoom < minZoom || currentZoom > maxZoom) { return; }
+			Vector3 localPosition = _referenceCamera.transform.position;
+			if (y <= 500)
+			{
+				//already at highest level, don't do anything
+				if (_currentZoomLevel == _maxZoomLevel) { return; }
+				_currentZoomLevel++;
+				loadTiles();
+				localPosition.y = 1000;
+			}
+			if (y >= 1000)
+			{
+				//already at lowest level, don't do anything
+				if (_currentZoomLevel == _minZoomLevel) { return; }
+				_currentZoomLevel--;
+				loadTiles();
+				localPosition.y = 500;
+			}
+			_referenceCamera.transform.localPosition = localPosition;
 
-		Vector3 viewPortLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
-		Vector3 viewPortUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
 
-		Hud.text = string.Format(
-			"camera.y:{0:0.00} zoom:{1} viewport:{2}/{3}"
-			, y
-			, currentZoom
-			, viewPortLL
-			, viewPortUR
-		);
+			//Hud.text = string.Format(
+			//	"camera.y:{0:0.00} zoom:{1} viewport:{2}/{3}"
+			//	, y
+			//	, _currentZoomLevel
+			//	, viewPortLL
+			//	, viewPortUR
+			//);
+		}
+		finally
+		{
+			Hud.text = string.Format(
+				"camera.y:{0:0.00} zoom:{1}"
+				, y
+				, _currentZoomLevel
+			);
+		}
+	}
 
+
+	private void loadTiles()
+	{
 		if (_creatingTiles) { return; }
 
 		try
 		{
 			_creatingTiles = true;
 
-
-			if (_lastZoom == currentZoom) { return; }
+			Vector3 viewPortLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
+			Vector3 viewPortUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
 
 			//revert downscaling and get back to full WebMerc coords
 			Vector2dBounds viewPortWebMerc = new Vector2dBounds(
@@ -95,12 +146,6 @@ public class Controller : MonoBehaviour
 				Conversions.MetersToLatLon(viewPortWebMerc.SouthWest)
 				, Conversions.MetersToLatLon(viewPortWebMerc.NorthEast)
 			);
-
-			if (currentZoom > 10)
-			{
-				Debug.LogWarningFormat("new zoom[{0}] too high, TileCover.Get() will crash", currentZoom);
-				return;
-			}
 
 			Vector2dBounds requestBounds = _boundsMap;
 
@@ -115,12 +160,11 @@ public class Controller : MonoBehaviour
 			}
 
 			//TileCover.Get() crashes if there are too many tiles
-			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(requestBounds, currentZoom);
+			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(requestBounds, _currentZoomLevel);
 
 			if (tilesNeeded.Count > 256)
 			{
-				_lastZoom = currentZoom;
-				Debug.LogWarningFormat("level[{0}] has too many tiles[{1}]: not creating any", currentZoom, tilesNeeded.Count);
+				Debug.LogWarningFormat("level[{0}] has too many tiles[{1}]: not creating any", _currentZoomLevel, tilesNeeded.Count);
 				return;
 			}
 
@@ -138,7 +182,6 @@ public class Controller : MonoBehaviour
 		}
 		finally
 		{
-			_lastZoom = currentZoom;
 			_creatingTiles = false;
 		}
 	}
