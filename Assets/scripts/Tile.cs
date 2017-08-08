@@ -27,7 +27,7 @@ public class Tile : MonoBehaviour
 	private Texture2D _texture;
 
 
-	public void Initialize(CanonicalTileId tileId, MapboxAccess mbxAccess)
+	public void Initialize(MapboxAccess mbxAccess, CanonicalTileId tileId, float unityTileScale)
 	{
 		string name = tileId.ToString();
 		Quaternion rotation = new Quaternion(0.7f, 0, 0, 0.7f);
@@ -56,62 +56,12 @@ public class Tile : MonoBehaviour
 		text.text = tileId.Z.ToString();
 
 
-		Vector2dBounds bb = Conversions.TileIdToBounds(tileId.X, tileId.Y, tileId.Z);
-		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.Center.y, z);
-		//float metersPerTilePixel = Conversions.GetTileScaleInMeters((float)bb.South, z);
-		float metersPerPixel = 0;
-		try
-		{
-			metersPerPixel = Conversions.GetTileScaleInMeters(tileId.Z);
-		}
-		catch (Exception ex)
-		{
-			Debug.LogWarning(tileId);
-			Debug.LogWarning(ex);
-			return;
-		}
-
-		//double scaleDownFactor = 100d;
-		//float metersPerTile = (float)((metersPerPixel * 256d) / scaleDownFactor);
-
-		//Vector3 unityScale = new Vector3(metersPerTile, 1, metersPerTile);
-		//HACK use metersPerPixel as 'scale' to stay within Unity's float limits
-		//Vector3 unityScale = new Vector3(metersPerPixel, 1, metersPerPixel);
-		//Vector3 unityScale = new Vector3(metersPerPixel*100, 1, metersPerPixel*100);
-		float unityTileScale = 400f;
 		Vector3 unityScale = new Vector3(unityTileScale, 1, unityTileScale);
 		transform.localScale = unityScale;
-		//Vector2d centerLatLng = Conversions.TileIdToCenterLatitudeLongitude(x, y, z);
-		//Debug.LogFormat("bbox:{0}", bb);
-		Vector2d wmSW = Conversions.LatLonToMeters(bb.SouthWest);
-		Vector2d wmNE = Conversions.LatLonToMeters(bb.NorthEast);
-		//Debug.LogFormat("sw:{0}   ne:{1}", wmSW, wmNE);
-		//Debug.LogFormat("center, lng:{0} lat:{1}", bb.Center.x, bb.Center.y);
-		Vector2d centerWebMerc = Conversions.LatLonToMeters(bb.Center);
-		//Debug.LogFormat("centerWebMerc, x:{0} y:{1} /256: {2}/{3}", centerWebMerc.x, centerWebMerc.y, centerWebMerc.x / 256, centerWebMerc.y / 256);
-
-
-		//string logMsg = string.Format(
-		//	"{1}{0}bbox:{2}{0}bb.center:{3}{0}centerLatLng:{4}{0}centerWebMerc:{5}{0}m/pix:{6}{0}m/tile:{7}"
-		//	, Environment.NewLine
-		//	, string.Format("{0}/{1}/{2}", z, x, y)
-		//	, bb
-		//	, bb.Center
-		//	, centerLatLng
-		//	, centerWebMerc
-		//	, metersPerPixel
-		//	, metersPerTile
-		//);
-		//Debug.Log(logMsg);
 
 		int maxTileCount = (int)Math.Pow(2, tileId.Z);
 		int shift = maxTileCount / 2;
 
-		//Vector3 position = new Vector3(
-		//	(float)(centerWebMerc.x / 1000) // divide by 256 as we are using metersPerPixel for scale
-		//	, 0
-		//	, (float)(centerWebMerc.y / 1000) // divide by 256 as we are using metersPerPixel for scale
-		//);
 
 		Vector3 position;
 		if (tileId.Z == 0)

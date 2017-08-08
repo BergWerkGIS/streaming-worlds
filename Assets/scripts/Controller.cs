@@ -28,6 +28,9 @@ public class Controller : MonoBehaviour
 	[SerializeField]
 	public int _currentZoomLevel;
 
+	[SerializeField]
+	public float _unityTileScale;
+
 
 	private GameObject _root;
 	private Vector2dBounds _boundsWorld;
@@ -35,6 +38,7 @@ public class Controller : MonoBehaviour
 	private Vector2dBounds _boundsMap;
 	private bool _creatingTiles = false;
 	private MapboxAccess _mbxAccess;
+	private float _previousY = float.MinValue;
 
 	// Use this for initialization
 	void Start()
@@ -47,10 +51,10 @@ public class Controller : MonoBehaviour
 
 		_mbxAccess = MapboxAccess.Instance;
 
-
+		_unityTileScale = _unityTileScale == 0 ? 400 : _unityTileScale;
 		_maxZoomLevel = _maxZoomLevel == 0 ? 10 : _maxZoomLevel;
 		//_minZoomLevel = _minZoomLevel == 0 ? 10 : _minZoomLevel;
-		_currentZoomLevel = _currentZoomLevel == 0 ? 4 : _currentZoomLevel;
+		//_currentZoomLevel = _currentZoomLevel == 0 ? 4 : _currentZoomLevel;
 
 		Vector3 localPosition = _referenceCamera.transform.position;
 		localPosition.y = 750;
@@ -66,7 +70,7 @@ public class Controller : MonoBehaviour
 		//);
 
 		_boundsSmall = new Vector2dBounds(
-			new Vector2d(-5,-5)
+			new Vector2d(-5, -5)
 			, new Vector2d(5, 5)
 		);
 
@@ -78,7 +82,10 @@ public class Controller : MonoBehaviour
 	void Update()
 	{
 
-			float y = _referenceCamera.transform.localPosition.y;
+		float y = _referenceCamera.transform.localPosition.y;
+		//no camera movement
+		if (y == _previousY) { return; }
+		_previousY = y;
 
 		try
 		{
@@ -88,7 +95,7 @@ public class Controller : MonoBehaviour
 			if (y > 500 & y < 1000) { return; }
 
 			Vector3 localPosition = _referenceCamera.transform.position;
-			if (y <= 500)
+			if (y < 500)
 			{
 				//already at highest level, don't do anything
 				if (_currentZoomLevel == _maxZoomLevel) { return; }
@@ -96,7 +103,7 @@ public class Controller : MonoBehaviour
 				loadTiles();
 				localPosition.y = 1000;
 			}
-			if (y >= 1000)
+			if (y > 1000)
 			{
 				//already at lowest level, don't do anything
 				if (_currentZoomLevel == _minZoomLevel) { return; }
@@ -105,22 +112,37 @@ public class Controller : MonoBehaviour
 				localPosition.y = 500;
 			}
 			_referenceCamera.transform.localPosition = localPosition;
-
-
-			//Hud.text = string.Format(
-			//	"camera.y:{0:0.00} zoom:{1} viewport:{2}/{3}"
-			//	, y
-			//	, _currentZoomLevel
-			//	, viewPortLL
-			//	, viewPortUR
-			//);
 		}
 		finally
 		{
+			Vector3 viewPortLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
+			Vector3 viewPortUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
+
+			Ray LLray = _referenceCamera.ViewportPointToRay(new Vector3(0, 0));
+			Ray URray = _referenceCamera.ViewportPointToRay(new Vector3(1, 1));
+			string raysInfo = "hitpoint[LL]:";
+			RaycastHit LLhit;
+			if (Physics.Raycast(LLray, out LLhit))
+			{
+				raysInfo += LLhit.point.ToString() + LLhit.transform.name;
+			}
+			else { raysInfo += "NADA"; }
+			raysInfo += Environment.NewLine + "hitpoint[UR]:";
+			RaycastHit URhit;
+			if (Physics.Raycast(URray, out URhit))
+			{
+				raysInfo += URhit.point.ToString() + URhit.transform.name;
+			}
+			else { raysInfo += "NADA"; }
+
 			Hud.text = string.Format(
-				"camera.y:{0:0.00} zoom:{1}"
+				"camera.y:{1:0.00} zoom:{2}{0}viewport:{3}/{4}{0}{5}"
+				, Environment.NewLine
 				, y
 				, _currentZoomLevel
+				, viewPortLL
+				, viewPortUR
+				, raysInfo
 			);
 		}
 	}
@@ -176,7 +198,7 @@ public class Controller : MonoBehaviour
 			{
 				Tile tile = new GameObject().AddComponent<Tile>();
 				tile.transform.parent = _root.transform;
-				tile.Initialize(tileId, _mbxAccess);
+				tile.Initialize(_mbxAccess, tileId, _unityTileScale);
 				tile.SetActive(true);
 			}
 		}
