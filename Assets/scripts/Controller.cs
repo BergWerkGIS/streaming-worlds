@@ -148,6 +148,18 @@ public class Controller : MonoBehaviour
 	}
 
 
+	private CanonicalTileId getTileId(Vector3 unityPoint, int zoom)
+	{
+		int maxTileCount = (int)Math.Pow(2, _currentZoomLevel);
+		int shift = maxTileCount / 2;
+
+		int tileIdx = (int)(((unityPoint.x - (_unityTileScale / 2)) / _unityTileScale) + shift);
+		int tileIdy = -(int)(((unityPoint.y - (_unityTileScale / 2)) / _unityTileScale) + (shift + 1));
+		tileIdy += maxTileCount;
+
+		return new CanonicalTileId(zoom, tileIdx, tileIdy);
+	}
+
 	private void loadTiles()
 	{
 		if (_creatingTiles) { return; }
@@ -159,27 +171,29 @@ public class Controller : MonoBehaviour
 			Vector3 viewPortLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
 			Vector3 viewPortUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
 
-			//revert downscaling and get back to full WebMerc coords
-			Vector2dBounds viewPortWebMerc = new Vector2dBounds(
-				new Vector2d(viewPortLL.x *= 256, viewPortLL.z *= 256)
-				, new Vector2d(viewPortUR.x *= 256, viewPortUR.z *= 256)
-			);
-			Vector2dBounds viewPortLatLng = new Vector2dBounds(
-				Conversions.MetersToLatLon(viewPortWebMerc.SouthWest)
-				, Conversions.MetersToLatLon(viewPortWebMerc.NorthEast)
+			CanonicalTileId LLTileId = getTileId(viewPortLL, _currentZoomLevel);
+			CanonicalTileId URTileId = getTileId(viewPortUR, _currentZoomLevel);
+
+			//Vector2d sw = Conversions.TileIdToBounds(LLTileId.X, LLTileId.Y, _currentZoomLevel).SouthWest;
+			//Vector2d ne = Conversions.TileIdToBounds(URTileId.X, URTileId.Y, _currentZoomLevel).NorthEast;
+			Vector2d sw = Conversions.TileIdToBounds(LLTileId).SouthWest;
+			Vector2d ne = Conversions.TileIdToBounds(URTileId).NorthEast;
+
+			Vector2dBounds requestBounds = new Vector2dBounds(
+				//Conversions.MetersToLatLon(sw)
+				//, Conversions.MetersToLatLon(ne)
+				sw
+				, ne
 			);
 
-			Vector2dBounds requestBounds = _boundsMap;
-
-			if (
-				viewPortLatLng.West > requestBounds.West
-				&& viewPortLatLng.East < requestBounds.East
-				&& viewPortLatLng.South > requestBounds.South
-				&& viewPortLatLng.North < requestBounds.North
-			)
-			{
-				requestBounds = viewPortLatLng;
-			}
+			Debug.LogFormat("z[{0}] ll tileId:{1}/{2} ur tile id:{3}/{4} requestBounds:{5}"
+				, _currentZoomLevel
+				, LLTileId.X
+				, LLTileId.Y
+				, URTileId.X
+				, URTileId.Y
+				, requestBounds
+			);
 
 			//TileCover.Get() crashes if there are too many tiles
 			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(requestBounds, _currentZoomLevel);

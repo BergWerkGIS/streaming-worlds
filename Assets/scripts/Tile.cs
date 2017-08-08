@@ -59,11 +59,15 @@ public class Tile : MonoBehaviour
 		Vector3 unityScale = new Vector3(unityTileScale, 1, unityTileScale);
 		transform.localScale = unityScale;
 
+		//number of tiles along the world's edge at current zoomlevel
 		int maxTileCount = (int)Math.Pow(2, tileId.Z);
 		int shift = maxTileCount / 2;
 
 
 		Vector3 position;
+		// shift origin from slippy map tile id system to unity coordinate system:
+		// slippy map tile ids: start from top left and increase to the right and to the bottom
+		// unity coordinate system: cartesian "starting in the middle (0/0)" going in all 4 directions
 		if (tileId.Z == 0)
 		{
 			position = new Vector3(0, 0, 0);
@@ -71,9 +75,9 @@ public class Tile : MonoBehaviour
 		else
 		{
 			position = new Vector3(
-				(tileId.X - shift) * unityScale.x + (unityScale.x / 2)
+				(tileId.X - shift) * unityTileScale + (unityTileScale / 2)
 				, 0
-				, (maxTileCount - tileId.Y - (shift + 1)) * unityScale.x + (unityScale.x / 2)
+				, (maxTileCount - tileId.Y - (shift + 1)) * unityTileScale + (unityTileScale / 2)
 			);
 		}
 

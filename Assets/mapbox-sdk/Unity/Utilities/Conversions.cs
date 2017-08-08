@@ -248,6 +248,26 @@ namespace Mapbox.Unity.Utilities
 			return new Vector2dBounds(sw, ne);
 		}
 
+
+		public static Vector2dBounds TileIdToBounds(CanonicalTileId tileId)
+		{
+			Vector2d sw = new Vector2d(tile2lon(tileId.X, tileId.Z), tile2lat(tileId.Y + 1, tileId.Z));
+			Vector2d ne = new Vector2d(tile2lon(tileId.X + 1, tileId.Z), tile2lat(tileId.Y, tileId.Z));
+			return new Vector2dBounds(sw, ne);
+		}
+
+
+		private static double tile2lon(int x, int z)
+		{
+			return x / Math.Pow(2, z) * 360 - 180;
+		}
+
+		private static double tile2lat(int y, int z)
+		{
+			double n = Math.PI - (2 * Math.PI * y) / Math.Pow(2, z);
+			return DegreeEqualsRadians * Math.Atan(Math.Sinh(n));
+		}
+
 		/// <summary>
 		/// Gets the WGS84 lat/lon of the center of a tile.
 		/// </summary>
