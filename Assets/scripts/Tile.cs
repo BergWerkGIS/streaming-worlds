@@ -44,16 +44,18 @@ public class Tile : MonoBehaviour
 
 		GameObject goTxt = new GameObject("text");
 		goTxt.transform.parent = transform;
-		goTxt.transform.localScale = new Vector3(0.2f, 0.2f);
+		goTxt.transform.localScale = new Vector3(0.15f, 0.15f);
 		TextMesh text = goTxt.AddComponent<TextMesh>();
 		text.transform.SetPositionAndRotation(
 			text.transform.position
 			, rotation
 		);
 		text.anchor = TextAnchor.MiddleCenter;
+		text.alignment = TextAlignment.Center;
+		text.fontStyle = FontStyle.Bold;
 		text.color = Color.red;
-		//text.text = name;
-		text.text = tileId.Z.ToString();
+		text.text = name.Replace("/", Environment.NewLine);
+		//text.text = tileId.Z.ToString();
 
 
 		Vector3 unityScale = new Vector3(unityTileScale, 1, unityTileScale);
@@ -98,6 +100,8 @@ public class Tile : MonoBehaviour
 					Debug.LogFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
 					return;
 				}
+				//
+				if (null == tileRepresentation) { return; }
 				MeshRenderer mr = tileRepresentation.GetComponent<MeshRenderer>();
 				if (null == mr) { return; }
 				_texture = new Texture2D(0, 0, TextureFormat.RGB24, true);
