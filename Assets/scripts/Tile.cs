@@ -27,7 +27,7 @@ public class Tile : MonoBehaviour
 	private Texture2D _texture;
 
 
-	public void Initialize(MapboxAccess mbxAccess, CanonicalTileId tileId, float unityTileScale)
+	public void Initialize(MapboxAccess mbxAccess, CanonicalTileId tileId, float unityTileScale, Vector2d center)
 	{
 		string name = tileId.ToString();
 		Quaternion rotation = new Quaternion(0.7f, 0, 0, 0.7f);
@@ -72,16 +72,24 @@ public class Tile : MonoBehaviour
 		// unity coordinate system: cartesian "starting in the middle (0/0)" going in all 4 directions
 		if (tileId.Z == 0)
 		{
-			position = new Vector3(0, 0, 0);
+			position = new Vector3(0 - (float)center.x, 0, 0 - (float)center.y);
 		}
 		else
 		{
+			// x: * shift to west by half of all x tiles at that zoom
+			//    * multiply by tile scale in Unity units
+			//    * add another half tile scale to get center 
+			// z: * reverse order from top -> bottom to bottom -> top
+			//    * shift to north by half of all y tiles at that zoom, plus 1
+			//    * multiply by tile scale in Unity units
+			//    * add another half tile scale to get center 
 			position = new Vector3(
-				(tileId.X - shift) * unityTileScale + (unityTileScale / 2)
+				((tileId.X - shift) * unityTileScale + (unityTileScale / 2)) - (float)center.x
 				, 0
-				, (maxTileCount - tileId.Y - (shift + 1)) * unityTileScale + (unityTileScale / 2)
+				, ((maxTileCount - tileId.Y - (shift + 1)) * unityTileScale + (unityTileScale / 2)) - (float)center.y
 			);
 		}
+		Debug.LogFormat("{0}: position[unity units]:{1}/{2}", tileId, position.x, position.z);
 
 		transform.localPosition = position;
 

@@ -1,5 +1,6 @@
 ﻿namespace Mapbox.Examples
 {
+	using Mapbox.Utils;
 	using UnityEngine;
 
 	public class CameraMovement : MonoBehaviour
@@ -12,6 +13,10 @@
 
 		[SerializeField]
 		Camera _referenceCamera;
+
+		[HideInInspector]
+		public Controller Controller;
+
 
 		Quaternion _originalRotation;
 		Vector3 _origin;
@@ -64,7 +69,27 @@
 			{
 				var offset = _origin - _delta;
 				offset.y = transform.localPosition.y;
-				transform.localPosition = offset;
+
+				if (null != Controller)
+				{
+					if (0 != offset.x && 0 != offset.z)
+					{
+						Controller._center.x += offset.x;
+						Controller._center.y += offset.z;
+
+						//Vector3 mapPos = new Vector3(-offset.x, 0, -offset.z);
+						//Controller._root.transform.localPosition = mapPos;
+						//foreach (Transform child in Controller._root.transform)
+						//{
+						//	Vector3 newPos = new Vector3(
+						//		child.transform.localPosition.x - transform.localPosition.x,
+						//		0,
+						//		child.transform.localPosition.z - transform.localPosition.z
+						//	);
+						//	child.transform.localPosition = newPos;
+						//}
+					}
+				}
 			}
 			else
 			{
@@ -73,14 +98,16 @@
 				y = -Input.GetAxis("Mouse ScrollWheel") * _zoomSpeed;
 				x = 0;
 				z = 0;
+
+
 				Vector3 localPosition = transform.localPosition + transform.forward * y + (_originalRotation * new Vector3(x * _panSpeed, 0, z * _panSpeed));
 
-				////don't go below tile plane
-				//if (localPosition.y < _referenceCamera.nearClipPlane) { localPosition.y = _referenceCamera.nearClipPlane * 1.01f; }
-				////don't go out beyond world extent
-				//if (localPosition.y > _referenceCamera.farClipPlane) { localPosition.y = _referenceCamera.farClipPlane; }
 
+				//allow move camera along Y only
+				localPosition.x = 0;
+				localPosition.z = 0;
 				transform.localPosition = localPosition;
+
 			}
 		}
 	}

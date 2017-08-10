@@ -1,4 +1,5 @@
-﻿using Mapbox.Map;
+﻿using Mapbox.Examples;
+using Mapbox.Map;
 using Mapbox.Unity;
 using Mapbox.Unity.Utilities;
 using Mapbox.Utils;
@@ -15,6 +16,9 @@ public class Controller : MonoBehaviour
 
 	[SerializeField]
 	Camera _referenceCamera;
+
+	[SerializeField]
+	CameraMovement _CameraMovement;
 
 	[SerializeField]
 	public Text Hud;
@@ -39,12 +43,17 @@ public class Controller : MonoBehaviour
 	[SerializeField]
 	public float _unityTileScale;
 
+	[HideInInspector]
+	public GameObject _root;
+
+	[HideInInspector]
+	public Vector2d _center = Vector2d.zero;
 
 	private Plane _groundPlane;
-	private GameObject _root;
 	private bool _creatingTiles = false;
 	private MapboxAccess _mbxAccess;
 	private float _previousY = float.MinValue;
+	private Vector2dBounds _viewPortLatLngBounds;
 
 	private GameObject _DEBUG_cameraCenterRayHitPnt;
 	private GameObject _DEBUG_cameraLLRayHitPnt;
@@ -54,11 +63,8 @@ public class Controller : MonoBehaviour
 	// Use this for initialization
 	void Start()
 	{
-		if (null == _referenceCamera)
-		{
-			Debug.LogError("no reference camera");
-			return;
-		}
+		if (null == _referenceCamera) { Debug.LogError("reference camera not set"); return; }
+		if (null == _CameraMovement) { Debug.LogError("CameraMovement not set"); return; }
 
 		_mbxAccess = MapboxAccess.Instance;
 
@@ -66,6 +72,20 @@ public class Controller : MonoBehaviour
 		_maxZoomLevel = _maxZoomLevel == 0 ? 10 : _maxZoomLevel;
 		_cameraZoomingRangeMaxY = _cameraZoomingRangeMaxY == 0 ? 1000 : _cameraZoomingRangeMaxY;
 		_cameraZoomingRangeMinY = _cameraZoomingRangeMinY == 0 ? 500 : _cameraZoomingRangeMinY;
+
+
+
+		_DEBUG_cameraCenterRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		_DEBUG_cameraCenterRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
+		_DEBUG_cameraCenterRayHitPnt.name = "camera center ray hit point";
+		_DEBUG_cameraLLRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		_DEBUG_cameraLLRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
+		_DEBUG_cameraLLRayHitPnt.name = "camera LL ray hit point";
+		_DEBUG_cameraURRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		_DEBUG_cameraURRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
+		_DEBUG_cameraURRayHitPnt.name = "camera UR ray hit point";
+
+
 
 
 		Vector3 localPosition = _referenceCamera.transform.position;
@@ -76,6 +96,7 @@ public class Controller : MonoBehaviour
 
 		Hud.text = "Start";
 		_root = new GameObject("root");
+		_CameraMovement.Controller = this;
 
 		loadTiles(
 			new Vector3(-100, 0, -100)
@@ -87,25 +108,57 @@ public class Controller : MonoBehaviour
 	void Update()
 	{
 
+		Ray rayCenter = _referenceCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f));
 		Ray rayLL = _referenceCamera.ViewportPointToRay(new Vector3(0, 0));
 		Ray rayUR = _referenceCamera.ViewportPointToRay(new Vector3(1, 1));
-		Ray rayCenter = _referenceCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f));
 
+		Vector3 hitPntCenter = getGroundPlaneHitPoint(rayCenter);
 		Vector3 hitPntLL = getGroundPlaneHitPoint(rayLL);
 		Vector3 hitPntUR = getGroundPlaneHitPoint(rayUR);
-		Vector3 hitPntCenter = getGroundPlaneHitPoint(rayCenter);
+
+		//hitPntCenter.x -= (float)_center.x;
+		//hitPntCenter.z -= (float)_center.y;
+		//hitPntLL.x -= (float)_center.x;
+		//hitPntLL.z -= (float)_center.y;
+		//hitPntUR.x -= (float)_center.x;
+		//hitPntUR.z -= (float)_center.y;
+
+		//factor to get from Unity units to WebMercator meters
+		//assume tile size of 256
+		double factor = Conversions.GetTileScaleInMeters(_currentZoomLevel) * 256 / _unityTileScale;
+		Vector2d llWebMerc = new Vector2d(hitPntLL.x * factor, hitPntLL.z * factor);
+		Vector2d urWebMerc = new Vector2d(hitPntUR.x * factor, hitPntUR.z * factor);
+		Vector2d llLatLng = Conversions.MetersToLatLon(llWebMerc);
+		Vector2d urLatLng = Conversions.MetersToLatLon(urWebMerc);
+
+		Vector2dBounds currentViewPortLatLngBnds = new Vector2dBounds(
+			llLatLng
+			, urLatLng
+		);
 
 		float y = _referenceCamera.transform.localPosition.y;
-		//no camera movement
-		if (y == _previousY) { return; }
+		//HACK: using 'ToString()' as Vector2dBounds doesn't (yet?) have an equality operator
+		bool bboxChanged = !(_viewPortLatLngBounds.ToString() == currentViewPortLatLngBnds.ToString());
+		//no zoom, no pan
+		if (y == _previousY && !bboxChanged) { return; }
 		_previousY = y;
 
 		try
 		{
 			if (_creatingTiles) { return; }
 
-			//camera moves within one zoom level, don't do anything
-			if (y > _cameraZoomingRangeMinY & y < _cameraZoomingRangeMaxY) { return; }
+			//camera moves within one zoom level, and no panning, don't do anything
+			if (
+				(y > _cameraZoomingRangeMinY && y < _cameraZoomingRangeMaxY)
+				&& !bboxChanged
+			)
+			{
+				Debug.Log("nothing's changed");
+				return;
+			}
+			//if (bboxChanged) { Debug.LogFormat("bbox changed: {0} vs. {1}", _viewPortLatLngBounds, currentViewPortLatLngBnds); }
+
+			_viewPortLatLngBounds = currentViewPortLatLngBnds;
 
 			Vector3 localPosition = _referenceCamera.transform.position;
 			//close to ground, zoom in
@@ -114,76 +167,51 @@ public class Controller : MonoBehaviour
 				//already at highest level, don't do anything
 				if (_currentZoomLevel == _maxZoomLevel) { return; }
 				_currentZoomLevel++;
-				if (0 != localPosition.x || 0 != localPosition.z) { shiftCamera(ref localPosition, true); }
+				//if (0 != localPosition.x || 0 != localPosition.z) { shiftCamera(ref localPosition, true); }
 				//use '_currentZoomLevel - 1' for extent to prevent disappearing tiles at the birder
 				loadTiles(hitPntLL, hitPntUR, _currentZoomLevel - 1);
 				localPosition.y = _cameraZoomingRangeMaxY;
+				_referenceCamera.transform.localPosition = localPosition;
 			}
 			//arrived at max distance, zoom out
-			if (y > _cameraZoomingRangeMaxY)
+			else if (y > _cameraZoomingRangeMaxY)
 			{
 				//already at lowest level, don't do anything
 				if (_currentZoomLevel == _minZoomLevel) { return; }
 				_currentZoomLevel--;
-				if (0 != localPosition.x || 0 != localPosition.z) { shiftCamera(ref localPosition, false); }
+				//if (0 != localPosition.x || 0 != localPosition.z) { shiftCamera(ref localPosition, false); }
 				loadTiles(hitPntLL, hitPntUR, _currentZoomLevel);
 				localPosition.y = _cameraZoomingRangeMinY;
+				_referenceCamera.transform.localPosition = localPosition;
 			}
-			_referenceCamera.transform.localPosition = localPosition;
+			else if (bboxChanged)
+			{
+				loadTiles(hitPntLL, hitPntUR, _currentZoomLevel);
+			}
+
 		}
 		finally
 		{
 			//Debug.DrawRay(rayCenter.origin, rayCenter.direction * groundPlaneDistance, Color.green);
 
-			if (null == _DEBUG_cameraCenterRayHitPnt)
-			{
-				_DEBUG_cameraCenterRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-				_DEBUG_cameraCenterRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
-				_DEBUG_cameraCenterRayHitPnt.name = "camera center ray hit point";
-			}
 			_DEBUG_cameraCenterRayHitPnt.transform.position = hitPntCenter;
-
-			if (null == _DEBUG_cameraLLRayHitPnt)
-			{
-				_DEBUG_cameraLLRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-				_DEBUG_cameraLLRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
-				_DEBUG_cameraLLRayHitPnt.name = "camera LL ray hit point";
-			}
 			_DEBUG_cameraLLRayHitPnt.transform.position = hitPntLL;
-
-			if (null == _DEBUG_cameraURRayHitPnt)
-			{
-				_DEBUG_cameraURRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-				_DEBUG_cameraURRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
-				_DEBUG_cameraURRayHitPnt.name = "camera UR ray hit point";
-			}
 			_DEBUG_cameraURRayHitPnt.transform.position = hitPntUR;
 
 
 			Hud.text = string.Format(
-				"camera.y:{1:0.00} zoom:{2}{0}center:{3}{0}LL:{4}{0}UR:{5}"
+				"camera.y:{1:0.00} zoom:{2}{0}center:{3}{0}LL:{4}{0}UR:{5}{0}WebMerc:{6}/{7}{0}LatLng:{8}/{9}"
 				, Environment.NewLine
 				, y
 				, _currentZoomLevel
 				, hitPntCenter
 				, hitPntLL
 				, hitPntUR
+				, string.Format("{0:0.0},{1:0.0}", llWebMerc.x, llWebMerc.y)
+				, string.Format("{0:0.0},{1:0.0}", urWebMerc.x, llWebMerc.y)
+				, llLatLng
+				, urLatLng
 			);
-		}
-	}
-
-
-	private void shiftCamera(ref Vector3 localPosition, bool zoomIn)
-	{
-		if (zoomIn)
-		{
-			localPosition.x = localPosition.x * 2;
-			localPosition.z = localPosition.z * 2;
-		}
-		else
-		{
-			localPosition.x = localPosition.x / 2;
-			localPosition.z = localPosition.z / 2;
 		}
 	}
 
@@ -204,28 +232,10 @@ public class Controller : MonoBehaviour
 		{
 			_creatingTiles = true;
 
-			double factor = Conversions.GetTileScaleInMeters(zoom) * 256 / _unityTileScale;
-			Vector2d llWebMerc = new Vector2d(ll.x * factor, ll.z * factor);
-			Vector2d llLatLng = Conversions.MetersToLatLon(llWebMerc);
-			Vector2d urWebMerc = new Vector2d(ur.x * factor, ur.z * factor);
-			Vector2d urLatLng = Conversions.MetersToLatLon(urWebMerc);
-
-			Vector2dBounds requestBounds = new Vector2dBounds(
-				llLatLng
-				, urLatLng
-			);
-
-			Debug.LogFormat("z[{0}] requestBounds:{1} wmLL:{2} latLngLL:{3} wmUR:{4} latLngUR:{5}"
-				, _currentZoomLevel
-				, requestBounds
-				, llWebMerc
-				, llLatLng
-				, urWebMerc
-				, urLatLng
-			);
+			Debug.LogFormat("center:{0} bboxLatLng:{1}", _center, _viewPortLatLngBounds);
 
 			//TileCover.Get() crashes if there are too many tiles
-			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(requestBounds, _currentZoomLevel);
+			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(_viewPortLatLngBounds, _currentZoomLevel);
 
 			if (tilesNeeded.Count > 256)
 			{
@@ -241,7 +251,7 @@ public class Controller : MonoBehaviour
 			{
 				Tile tile = new GameObject().AddComponent<Tile>();
 				tile.transform.parent = _root.transform;
-				tile.Initialize(_mbxAccess, tileId, _unityTileScale);
+				tile.Initialize(_mbxAccess, tileId, _unityTileScale, _center);
 				tile.SetActive(true);
 			}
 		}
