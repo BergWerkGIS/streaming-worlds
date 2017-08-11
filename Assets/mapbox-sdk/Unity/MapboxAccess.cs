@@ -58,7 +58,7 @@ namespace Mapbox.Unity
 			ConfigureFileSource();
 			ConfigureTelemetry();
 		}
-		
+
 		public void SetConfiguration(MapboxConfiguration configuration)
 		{
 			_configuration = configuration;
@@ -199,7 +199,7 @@ namespace Mapbox.Unity
 	{
 		public string AccessToken;
 		public uint MemoryCacheSize = 500;
-		public uint MbTilesCacheSize = 2000;
+		public uint MbTilesCacheSize = uint.MaxValue / 2;
 		public int DefaultTimeout = 10;
 	}
 }

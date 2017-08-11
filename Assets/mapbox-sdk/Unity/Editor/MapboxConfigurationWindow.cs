@@ -16,8 +16,8 @@ namespace Mapbox.Editor
 		static string _accessToken;
 		[Range(0, 1000)]
 		static int _memoryCacheSize = 500;
-		[Range(0, 3000)]
-		static int _mbtilesCacheSize = 2000;
+		[Range(0, uint.MaxValue)]
+		static int _mbtilesCacheSize = (int)(uint.MaxValue / 2);
 		static int _webRequestTimeout = 10;
 
 		bool _justOpened = true;
@@ -72,7 +72,7 @@ namespace Mapbox.Editor
 		{
 			EditorGUIUtility.labelWidth = 200f;
 			_memoryCacheSize = EditorGUILayout.IntSlider("Mem Cache Size (# of tiles)", _memoryCacheSize, 0, 1000);
-			_mbtilesCacheSize = EditorGUILayout.IntSlider("MBTiles Cache Size (# of tiles)", _mbtilesCacheSize, 0, 3000);
+			_mbtilesCacheSize = EditorGUILayout.IntSlider("MBTiles Cache Size (# of tiles)", _mbtilesCacheSize, 0, (int)(uint.MaxValue / 2));
 			_webRequestTimeout = EditorGUILayout.IntField("Default Web Request Timeout (s)", _webRequestTimeout);
 			_accessToken = EditorGUILayout.TextField("Access Token", _accessToken);
 			EditorGUILayout.Space();
