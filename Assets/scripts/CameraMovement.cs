@@ -42,8 +42,15 @@
 			);
 		}
 
-		void LateUpdate()
+		void LateUpdate_OLD()
 		{
+			//development short cut: reset center to 0/0 with right click
+			if (Input.GetMouseButton(1))
+			{
+				Controller._center.x = Controller._center.y = 0;
+				return;
+			}
+
 			var x = 0f;
 			var y = 0f;
 			var z = 0f;
@@ -74,20 +81,20 @@
 				{
 					if (0 != offset.x && 0 != offset.z)
 					{
-						Controller._center.x += offset.x;
-						Controller._center.y += offset.z;
+						Controller._center.x = offset.x;
+						Controller._center.y = offset.z;
 
 						//Vector3 mapPos = new Vector3(-offset.x, 0, -offset.z);
 						//Controller._root.transform.localPosition = mapPos;
-						//foreach (Transform child in Controller._root.transform)
-						//{
-						//	Vector3 newPos = new Vector3(
-						//		child.transform.localPosition.x - transform.localPosition.x,
-						//		0,
-						//		child.transform.localPosition.z - transform.localPosition.z
-						//	);
-						//	child.transform.localPosition = newPos;
-						//}
+						foreach (Transform child in Controller._root.transform)
+						{
+							Vector3 newPos = new Vector3(
+								child.transform.localPosition.x - (float)Controller._center.x,// transform.localPosition.x,
+								0,
+								child.transform.localPosition.z - (float)Controller._center.y// transform.localPosition.z
+							);
+							child.transform.localPosition = newPos;
+						}
 					}
 				}
 			}
@@ -110,5 +117,88 @@
 
 			}
 		}
+
+
+		private void LateUpdate()
+		{
+			//development short cut: reset center to 0/0 with right click
+			if (Input.GetMouseButton(1))
+			{
+				Controller._center.x = Controller._center.y = 0;
+				return;
+			}
+
+
+			// zoom
+			var y = -Input.GetAxis("Mouse ScrollWheel") * _zoomSpeed;
+			//avoid unnecessary translation
+			if (0 != y)
+			{
+				_referenceCamera.transform.Translate(new Vector3(0, y, 0), Space.World);
+				// TODO:
+				//current approach doesn't work nicely when camera is tilted
+				//maybe move camera so that center of viewport is always at 0/0
+				//_referenceCamera.transform.Translate(new Vector3(0, y, 0), Space.Self);
+			}
+
+			//pan keyboard
+			float xMove = Input.GetAxis("Horizontal");
+			float zMove = Input.GetAxis("Vertical");
+			if (0 != xMove || 0 != zMove)
+			{
+				Debug.LogFormat("xMove:{0} zMove:{1}", xMove, zMove);
+				Controller._center.x += xMove;
+				Controller._center.y += zMove;
+			}
+
+			//pan mouse
+			if (Input.GetMouseButtonDown(0))
+			{
+				var mouseDownPosScreen = Input.mousePosition;
+				//assign distance of camera to ground plane to z, otherwise ScreenToWorldPoint() will always return the position of the camera
+				mouseDownPosScreen.z = _referenceCamera.transform.localPosition.y;
+				_origin = _referenceCamera.ScreenToWorldPoint(mouseDownPosScreen);
+				Debug.LogFormat("button down, mousePosScreen:{0} mousePosWorld:{1}", mouseDownPosScreen, _origin);
+			}
+
+			if (Input.GetMouseButtonUp(0))
+			{
+				var mouseUpPosScreen = Input.mousePosition;
+				//assign distance of camera to ground plane to z, otherwise ScreenToWorldPoint() will always return the position of the camera
+				//http://answers.unity3d.com/answers/599100/view.html
+				mouseUpPosScreen.z = _referenceCamera.transform.localPosition.y;
+				var mouseUpPosWorld = _referenceCamera.ScreenToWorldPoint(mouseUpPosScreen);
+				Debug.LogFormat("button up, mousePosScreen:{0} mousePosWorld:{1}", mouseUpPosScreen, mouseUpPosWorld);
+
+				//has position changed?
+				if (_origin != mouseUpPosWorld)
+				{
+					var offset = _origin - mouseUpPosWorld;
+					if (null != Controller)
+					{
+						var centerOld = Controller._center;
+						Controller._center.x += offset.x;
+						Controller._center.y += offset.z;
+
+						Debug.LogFormat("shifting tiles, old center:{0} new center:{1} offset:{2}", centerOld, Controller._center, offset);
+
+						//Vector3 mapPos = new Vector3(-offset.x, 0, -offset.z);
+						//Controller._root.transform.localPosition = mapPos;
+						//foreach (Transform child in Controller._root.transform)
+						//{
+						//	Vector3 newPos = new Vector3(
+						//		child.transform.localPosition.x - offset.x,
+						//		0,
+						//		child.transform.localPosition.z - offset.z
+						//	);
+						//	child.transform.localPosition = newPos;
+						//}
+					}
+				}
+			}
+		}
+
+
+
 	}
 }

@@ -43,6 +43,7 @@ public class Controller : MonoBehaviour
 	[SerializeField]
 	public float _unityTileScale;
 
+
 	[HideInInspector]
 	public GameObject _root;
 
@@ -58,7 +59,7 @@ public class Controller : MonoBehaviour
 	private GameObject _DEBUG_cameraCenterRayHitPnt;
 	private GameObject _DEBUG_cameraLLRayHitPnt;
 	private GameObject _DEBUG_cameraURRayHitPnt;
-	private float _DEBUG_hitPointScale = 20f;
+	private float _DEBUG_hitPointScale;
 
 	// Use this for initialization
 	void Start()
@@ -74,7 +75,7 @@ public class Controller : MonoBehaviour
 		_cameraZoomingRangeMinY = _cameraZoomingRangeMinY == 0 ? 500 : _cameraZoomingRangeMinY;
 
 
-
+		_DEBUG_hitPointScale = _unityTileScale * 0.05f;
 		_DEBUG_cameraCenterRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 		_DEBUG_cameraCenterRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
 		_DEBUG_cameraCenterRayHitPnt.name = "camera center ray hit point";
@@ -99,15 +100,14 @@ public class Controller : MonoBehaviour
 		_CameraMovement.Controller = this;
 
 		loadTiles(
-			new Vector3(-100, 0, -100)
-			, new Vector3(100, 0, 100)
+			_viewPortLatLngBounds
 			, _currentZoomLevel
 		);
 	}
 
 	void Update()
 	{
-
+		// rays from camera to groundplane: center, lower left and upper right
 		Ray rayCenter = _referenceCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f));
 		Ray rayLL = _referenceCamera.ViewportPointToRay(new Vector3(0, 0));
 		Ray rayUR = _referenceCamera.ViewportPointToRay(new Vector3(1, 1));
@@ -116,18 +116,25 @@ public class Controller : MonoBehaviour
 		Vector3 hitPntLL = getGroundPlaneHitPoint(rayLL);
 		Vector3 hitPntUR = getGroundPlaneHitPoint(rayUR);
 
-		//hitPntCenter.x -= (float)_center.x;
-		//hitPntCenter.z -= (float)_center.y;
-		//hitPntLL.x -= (float)_center.x;
-		//hitPntLL.z -= (float)_center.y;
-		//hitPntUR.x -= (float)_center.x;
-		//hitPntUR.z -= (float)_center.y;
+		//apply shift (panning)
+		//work with Vector2d, double precision to avoid Unity floating point problems
+		//Vector2d hitPntShiftedCenter = new Vector2d((hitPntCenter.x + _center.x) * Math.Pow(2, _currentZoomLevel), (hitPntCenter.z + _center.y) * Math.Pow(2, _currentZoomLevel));
+		//Vector2d hitPntShiftedLL = new Vector2d((hitPntLL.x + _center.x) * Math.Pow(2, _currentZoomLevel), (hitPntLL.z + _center.y) * Math.Pow(2, _currentZoomLevel));
+		//Vector2d hitPntShiftedUR = new Vector2d((hitPntUR.x + _center.x) * Math.Pow(2, _currentZoomLevel), (hitPntUR.z + _center.y) * Math.Pow(2, _currentZoomLevel));
+		Vector2d hitPntShiftedCenter = new Vector2d(hitPntCenter.x + (_center.x * Math.Pow(2, _currentZoomLevel)), hitPntCenter.z + (_center.y * Math.Pow(2, _currentZoomLevel)));
+		Vector2d hitPntShiftedLL = new Vector2d(hitPntLL.x + (_center.x * Math.Pow(2, _currentZoomLevel)), hitPntLL.z + (_center.y * Math.Pow(2, _currentZoomLevel)));
+		Vector2d hitPntShiftedUR = new Vector2d(hitPntUR.x + (_center.x * Math.Pow(2, _currentZoomLevel)), hitPntUR.z + (_center.y * Math.Pow(2, _currentZoomLevel)));
+		//Vector2d hitPntShiftedCenter = new Vector2d(hitPntCenter.x + _center.x, hitPntCenter.z + _center.y);
+		//Vector2d hitPntShiftedLL = new Vector2d(hitPntLL.x + _center.x, hitPntLL.z + _center.y);
+		//Vector2d hitPntShiftedUR = new Vector2d(hitPntUR.x + _center.x, hitPntUR.z + _center.y);
 
-		//factor to get from Unity units to WebMercator meters
-		//assume tile size of 256
+		//calculate factor to get from Unity units to WebMercator meters
+		//tile size of 256
 		double factor = Conversions.GetTileScaleInMeters(_currentZoomLevel) * 256 / _unityTileScale;
-		Vector2d llWebMerc = new Vector2d(hitPntLL.x * factor, hitPntLL.z * factor);
-		Vector2d urWebMerc = new Vector2d(hitPntUR.x * factor, hitPntUR.z * factor);
+
+		//convert Unity units to WebMercator and LatLng to get bounding box
+		Vector2d llWebMerc = new Vector2d(hitPntShiftedLL.x * factor, hitPntShiftedLL.y * factor);
+		Vector2d urWebMerc = new Vector2d(hitPntShiftedUR.x * factor, hitPntShiftedUR.y * factor);
 		Vector2d llLatLng = Conversions.MetersToLatLon(llWebMerc);
 		Vector2d urLatLng = Conversions.MetersToLatLon(urWebMerc);
 
@@ -137,9 +144,11 @@ public class Controller : MonoBehaviour
 		);
 
 		float y = _referenceCamera.transform.localPosition.y;
+
 		//HACK: using 'ToString()' as Vector2dBounds doesn't (yet?) have an equality operator
 		bool bboxChanged = !(_viewPortLatLngBounds.ToString() == currentViewPortLatLngBnds.ToString());
-		//no zoom, no pan
+
+		//no zoom, no pan -> don't do anyhting
 		if (y == _previousY && !bboxChanged) { return; }
 		_previousY = y;
 
@@ -169,7 +178,7 @@ public class Controller : MonoBehaviour
 				_currentZoomLevel++;
 				//if (0 != localPosition.x || 0 != localPosition.z) { shiftCamera(ref localPosition, true); }
 				//use '_currentZoomLevel - 1' for extent to prevent disappearing tiles at the birder
-				loadTiles(hitPntLL, hitPntUR, _currentZoomLevel - 1);
+				loadTiles(_viewPortLatLngBounds, _currentZoomLevel - 1);
 				localPosition.y = _cameraZoomingRangeMaxY;
 				_referenceCamera.transform.localPosition = localPosition;
 			}
@@ -180,13 +189,13 @@ public class Controller : MonoBehaviour
 				if (_currentZoomLevel == _minZoomLevel) { return; }
 				_currentZoomLevel--;
 				//if (0 != localPosition.x || 0 != localPosition.z) { shiftCamera(ref localPosition, false); }
-				loadTiles(hitPntLL, hitPntUR, _currentZoomLevel);
+				loadTiles(_viewPortLatLngBounds, _currentZoomLevel);
 				localPosition.y = _cameraZoomingRangeMinY;
 				_referenceCamera.transform.localPosition = localPosition;
 			}
 			else if (bboxChanged)
 			{
-				loadTiles(hitPntLL, hitPntUR, _currentZoomLevel);
+				loadTiles(_viewPortLatLngBounds, _currentZoomLevel);
 			}
 
 		}
@@ -200,17 +209,21 @@ public class Controller : MonoBehaviour
 
 
 			Hud.text = string.Format(
-				"camera.y:{1:0.00} zoom:{2}{0}center:{3}{0}LL:{4}{0}UR:{5}{0}WebMerc:{6}/{7}{0}LatLng:{8}/{9}"
+				"camera.y:{1:0.00} zoom:{2}{0}center:{3}{0}shifted:{4}{0}LL:{5}{0}shifted:{6}{0}UR:{7}{0}shifted:{8}{0}WebMerc:{9} / {10}{0}LatLng:{11} / {12}{0}center:{13}"
 				, Environment.NewLine
 				, y
 				, _currentZoomLevel
 				, hitPntCenter
+				, hitPntShiftedCenter
 				, hitPntLL
+				, hitPntShiftedLL
 				, hitPntUR
+				, hitPntShiftedUR
 				, string.Format("{0:0.0},{1:0.0}", llWebMerc.x, llWebMerc.y)
 				, string.Format("{0:0.0},{1:0.0}", urWebMerc.x, llWebMerc.y)
 				, llLatLng
 				, urLatLng
+				, _viewPortLatLngBounds.Center
 			);
 		}
 	}
@@ -224,7 +237,7 @@ public class Controller : MonoBehaviour
 	}
 
 
-	private void loadTiles(Vector3 ll, Vector3 ur, int zoom)
+	private void loadTiles(Vector2dBounds LatLngbounds, int zoom)
 	{
 		if (_creatingTiles) { return; }
 
@@ -232,14 +245,14 @@ public class Controller : MonoBehaviour
 		{
 			_creatingTiles = true;
 
-			Debug.LogFormat("center:{0} bboxLatLng:{1}", _center, _viewPortLatLngBounds);
+			Debug.LogFormat("center:{0} bboxLatLng:{1}", _center, LatLngbounds);
 
 			//TileCover.Get() crashes if there are too many tiles
-			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(_viewPortLatLngBounds, _currentZoomLevel);
+			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(LatLngbounds, zoom);
 
 			if (tilesNeeded.Count > 256)
 			{
-				Debug.LogWarningFormat("level[{0}] has too many tiles[{1}]: not creating any", _currentZoomLevel, tilesNeeded.Count);
+				Debug.LogWarningFormat("level[{0}] has too many tiles[{1}]: not creating any", zoom, tilesNeeded.Count);
 				return;
 			}
 

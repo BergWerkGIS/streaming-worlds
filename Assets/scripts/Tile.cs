@@ -63,7 +63,7 @@ public class Tile : MonoBehaviour
 
 		//number of tiles along the world's edge at current zoomlevel
 		int maxTileCount = (int)Math.Pow(2, tileId.Z);
-		int shift = maxTileCount / 2;
+		int tileIdShift = maxTileCount / 2;
 
 
 		Vector3 position;
@@ -83,13 +83,12 @@ public class Tile : MonoBehaviour
 			//    * shift to north by half of all y tiles at that zoom, plus 1
 			//    * multiply by tile scale in Unity units
 			//    * add another half tile scale to get center 
-			position = new Vector3(
-				((tileId.X - shift) * unityTileScale + (unityTileScale / 2)) - (float)center.x
-				, 0
-				, ((maxTileCount - tileId.Y - (shift + 1)) * unityTileScale + (unityTileScale / 2)) - (float)center.y
-			);
+			//work with doubles before assigning to Vector3 to avoid rouding errors
+			double x = ((tileId.X - tileIdShift) * unityTileScale + (unityTileScale / 2)) - (center.x * Math.Pow(2, tileId.Z));
+			double z = ((maxTileCount - tileId.Y - (tileIdShift + 1)) * unityTileScale + (unityTileScale / 2)) - (center.y * Math.Pow(2, tileId.Z));
+			position = new Vector3((float)x, 0, (float)z);
 		}
-		Debug.LogFormat("{0}: position[unity units]:{1}/{2}", tileId, position.x, position.z);
+		//Debug.LogFormat("{0}: position[unity units]:{1}/{2}", tileId, position.x, position.z);
 
 		transform.localPosition = position;
 
@@ -105,7 +104,7 @@ public class Tile : MonoBehaviour
 
 				if (r.HasError)
 				{
-					Debug.LogFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
+					Debug.LogErrorFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
 					return;
 				}
 				//
