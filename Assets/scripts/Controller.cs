@@ -7,6 +7,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -48,8 +49,9 @@ public class Controller : MonoBehaviour
 	public GameObject _root;
 
 	[HideInInspector]
-	public Vector2d _center = Vector2d.zero;
+	public Vector2d _centerUnity = Vector2d.zero;
 
+	private Vector2d _centerWebMerc = Vector2d.zero;
 	private Plane _groundPlane;
 	private bool _creatingTiles = false;
 	private MapboxAccess _mbxAccess;
@@ -118,15 +120,15 @@ public class Controller : MonoBehaviour
 
 		//apply shift (panning)
 		//work with Vector2d, double precision to avoid Unity floating point problems
-		//Vector2d hitPntShiftedCenter = new Vector2d((hitPntCenter.x + _center.x) * Math.Pow(2, _currentZoomLevel), (hitPntCenter.z + _center.y) * Math.Pow(2, _currentZoomLevel));
-		//Vector2d hitPntShiftedLL = new Vector2d((hitPntLL.x + _center.x) * Math.Pow(2, _currentZoomLevel), (hitPntLL.z + _center.y) * Math.Pow(2, _currentZoomLevel));
-		//Vector2d hitPntShiftedUR = new Vector2d((hitPntUR.x + _center.x) * Math.Pow(2, _currentZoomLevel), (hitPntUR.z + _center.y) * Math.Pow(2, _currentZoomLevel));
-		Vector2d hitPntShiftedCenter = new Vector2d(hitPntCenter.x + (_center.x * Math.Pow(2, _currentZoomLevel)), hitPntCenter.z + (_center.y * Math.Pow(2, _currentZoomLevel)));
-		Vector2d hitPntShiftedLL = new Vector2d(hitPntLL.x + (_center.x * Math.Pow(2, _currentZoomLevel)), hitPntLL.z + (_center.y * Math.Pow(2, _currentZoomLevel)));
-		Vector2d hitPntShiftedUR = new Vector2d(hitPntUR.x + (_center.x * Math.Pow(2, _currentZoomLevel)), hitPntUR.z + (_center.y * Math.Pow(2, _currentZoomLevel)));
-		//Vector2d hitPntShiftedCenter = new Vector2d(hitPntCenter.x + _center.x, hitPntCenter.z + _center.y);
-		//Vector2d hitPntShiftedLL = new Vector2d(hitPntLL.x + _center.x, hitPntLL.z + _center.y);
-		//Vector2d hitPntShiftedUR = new Vector2d(hitPntUR.x + _center.x, hitPntUR.z + _center.y);
+		//Vector2d hitPntShiftedCenter = new Vector2d((hitPntCenter.x + _centerUnity.x) * Math.Pow(2, _currentZoomLevel), (hitPntCenter.z + _centerUnity.y) * Math.Pow(2, _currentZoomLevel));
+		//Vector2d hitPntShiftedLL = new Vector2d((hitPntLL.x + _centerUnity.x) * Math.Pow(2, _currentZoomLevel), (hitPntLL.z + _centerUnity.y) * Math.Pow(2, _currentZoomLevel));
+		//Vector2d hitPntShiftedUR = new Vector2d((hitPntUR.x + _centerUnity.x) * Math.Pow(2, _currentZoomLevel), (hitPntUR.z + _centerUnity.y) * Math.Pow(2, _currentZoomLevel));
+		Vector2d hitPntShiftedCenter = new Vector2d(hitPntCenter.x + (_centerUnity.x * Math.Pow(2, _currentZoomLevel)), hitPntCenter.z + (_centerUnity.y * Math.Pow(2, _currentZoomLevel)));
+		Vector2d hitPntShiftedLL = new Vector2d(hitPntLL.x + (_centerUnity.x * Math.Pow(2, _currentZoomLevel)), hitPntLL.z + (_centerUnity.y * Math.Pow(2, _currentZoomLevel)));
+		Vector2d hitPntShiftedUR = new Vector2d(hitPntUR.x + (_centerUnity.x * Math.Pow(2, _currentZoomLevel)), hitPntUR.z + (_centerUnity.y * Math.Pow(2, _currentZoomLevel)));
+		//Vector2d hitPntShiftedCenter = new Vector2d(hitPntCenter.x + _centerUnity.x, hitPntCenter.z + _centerUnity.y);
+		//Vector2d hitPntShiftedLL = new Vector2d(hitPntLL.x + _centerUnity.x, hitPntLL.z + _centerUnity.y);
+		//Vector2d hitPntShiftedUR = new Vector2d(hitPntUR.x + _centerUnity.x, hitPntUR.z + _centerUnity.y);
 
 		//calculate factor to get from Unity units to WebMercator meters
 		//tile size of 256
@@ -178,7 +180,7 @@ public class Controller : MonoBehaviour
 				_currentZoomLevel++;
 				//if (0 != localPosition.x || 0 != localPosition.z) { shiftCamera(ref localPosition, true); }
 				//use '_currentZoomLevel - 1' for extent to prevent disappearing tiles at the birder
-				loadTiles(_viewPortLatLngBounds, _currentZoomLevel - 1);
+				loadTiles(_viewPortLatLngBounds, _currentZoomLevel);
 				localPosition.y = _cameraZoomingRangeMaxY;
 				_referenceCamera.transform.localPosition = localPosition;
 			}
@@ -207,24 +209,21 @@ public class Controller : MonoBehaviour
 			_DEBUG_cameraLLRayHitPnt.transform.position = hitPntLL;
 			_DEBUG_cameraURRayHitPnt.transform.position = hitPntUR;
 
+			StringBuilder sb = new StringBuilder();
+			sb.AppendLine(string.Format("camera.y:{0:0.00}", y));
+			sb.AppendLine(string.Format("zoom:{0}", _currentZoomLevel));
+			sb.AppendLine(string.Format("center[Unity]:{0}", _centerUnity));
+			sb.AppendLine(string.Format("center[hitPnt]:{0}", hitPntCenter));
+			sb.AppendLine(string.Format("shifted:{0}", hitPntShiftedCenter));
+			sb.AppendLine(string.Format("LL[hitPnt]:{0}", hitPntLL));
+			sb.AppendLine(string.Format("shifted:{0}", hitPntShiftedLL));
+			sb.AppendLine(string.Format("UR[hitPnt]:{0}", hitPntUR));
+			sb.AppendLine(string.Format("shifted:{0}", hitPntShiftedUR));
+			sb.AppendLine(string.Format("WebMerc:{0:0.0},{1:0.0} - {2:0.0},{3:0.0}", llWebMerc.x, llWebMerc.y, urWebMerc.x, llWebMerc.y));
+			sb.AppendLine(string.Format("LatLng:{0} - {1}", llLatLng, urLatLng));
+			sb.AppendLine(string.Format("center[vwPrtBnds]:{0}", _viewPortLatLngBounds.Center));
 
-			Hud.text = string.Format(
-				"camera.y:{1:0.00} zoom:{2}{0}center:{3}{0}shifted:{4}{0}LL:{5}{0}shifted:{6}{0}UR:{7}{0}shifted:{8}{0}WebMerc:{9} / {10}{0}LatLng:{11} / {12}{0}center:{13}"
-				, Environment.NewLine
-				, y
-				, _currentZoomLevel
-				, hitPntCenter
-				, hitPntShiftedCenter
-				, hitPntLL
-				, hitPntShiftedLL
-				, hitPntUR
-				, hitPntShiftedUR
-				, string.Format("{0:0.0},{1:0.0}", llWebMerc.x, llWebMerc.y)
-				, string.Format("{0:0.0},{1:0.0}", urWebMerc.x, llWebMerc.y)
-				, llLatLng
-				, urLatLng
-				, _viewPortLatLngBounds.Center
-			);
+			Hud.text = sb.ToString();
 		}
 	}
 
@@ -245,7 +244,7 @@ public class Controller : MonoBehaviour
 		{
 			_creatingTiles = true;
 
-			Debug.LogFormat("center:{0} bboxLatLng:{1}", _center, LatLngbounds);
+			Debug.LogFormat("center:{0} bboxLatLng:{1}", _centerUnity, LatLngbounds);
 
 			//TileCover.Get() crashes if there are too many tiles
 			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(LatLngbounds, zoom);
@@ -264,7 +263,7 @@ public class Controller : MonoBehaviour
 			{
 				Tile tile = new GameObject().AddComponent<Tile>();
 				tile.transform.parent = _root.transform;
-				tile.Initialize(_mbxAccess, tileId, _unityTileScale, _center);
+				tile.Initialize(_mbxAccess, tileId, _unityTileScale, _centerUnity);
 				tile.SetActive(true);
 			}
 		}

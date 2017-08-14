@@ -1,6 +1,7 @@
 ﻿namespace Mapbox.Examples
 {
 	using Mapbox.Utils;
+	using System;
 	using UnityEngine;
 
 	public class CameraMovement : MonoBehaviour
@@ -47,7 +48,7 @@
 			//development short cut: reset center to 0/0 with right click
 			if (Input.GetMouseButton(1))
 			{
-				Controller._center.x = Controller._center.y = 0;
+				Controller._centerUnity.x = Controller._centerUnity.y = 0;
 				return;
 			}
 
@@ -81,17 +82,17 @@
 				{
 					if (0 != offset.x && 0 != offset.z)
 					{
-						Controller._center.x = offset.x;
-						Controller._center.y = offset.z;
+						Controller._centerUnity.x = offset.x;
+						Controller._centerUnity.y = offset.z;
 
 						//Vector3 mapPos = new Vector3(-offset.x, 0, -offset.z);
 						//Controller._root.transform.localPosition = mapPos;
 						foreach (Transform child in Controller._root.transform)
 						{
 							Vector3 newPos = new Vector3(
-								child.transform.localPosition.x - (float)Controller._center.x,// transform.localPosition.x,
+								child.transform.localPosition.x - (float)Controller._centerUnity.x,// transform.localPosition.x,
 								0,
-								child.transform.localPosition.z - (float)Controller._center.y// transform.localPosition.z
+								child.transform.localPosition.z - (float)Controller._centerUnity.y// transform.localPosition.z
 							);
 							child.transform.localPosition = newPos;
 						}
@@ -124,7 +125,7 @@
 			//development short cut: reset center to 0/0 with right click
 			if (Input.GetMouseButton(1))
 			{
-				Controller._center.x = Controller._center.y = 0;
+				Controller._centerUnity.x = Controller._centerUnity.y = 0;
 				return;
 			}
 
@@ -147,8 +148,8 @@
 			if (0 != xMove || 0 != zMove)
 			{
 				Debug.LogFormat("xMove:{0} zMove:{1}", xMove, zMove);
-				Controller._center.x += xMove;
-				Controller._center.y += zMove;
+				Controller._centerUnity.x += (xMove / Math.Pow(2, Controller._currentZoomLevel));
+				Controller._centerUnity.y += (zMove / Math.Pow(2, Controller._currentZoomLevel));
 			}
 
 			//pan mouse
@@ -176,11 +177,11 @@
 					var offset = _origin - mouseUpPosWorld;
 					if (null != Controller)
 					{
-						var centerOld = Controller._center;
-						Controller._center.x += offset.x;
-						Controller._center.y += offset.z;
+						var centerOld = Controller._centerUnity;
+						Controller._centerUnity.x += (offset.x / Math.Pow(2, Controller._currentZoomLevel));
+						Controller._centerUnity.y += (offset.z / Math.Pow(2, Controller._currentZoomLevel));
 
-						Debug.LogFormat("shifting tiles, old center:{0} new center:{1} offset:{2}", centerOld, Controller._center, offset);
+						Debug.LogFormat("shifting tiles, old center:{0} new center:{1} offset:{2}", centerOld, Controller._centerUnity, offset);
 
 						//Vector3 mapPos = new Vector3(-offset.x, 0, -offset.z);
 						//Controller._root.transform.localPosition = mapPos;
