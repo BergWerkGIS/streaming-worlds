@@ -131,7 +131,7 @@
 
 
 			// zoom
-			var y = -Input.GetAxis("Mouse ScrollWheel") * _zoomSpeed;
+			var y = Input.GetAxis("Mouse ScrollWheel") * _zoomSpeed;
 			//avoid unnecessary translation
 			if (0 != y)
 			{

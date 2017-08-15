@@ -27,7 +27,13 @@ public class Tile : MonoBehaviour
 	private Texture2D _texture;
 
 
-	public void Initialize(MapboxAccess mbxAccess, CanonicalTileId tileId, float unityTileScale, Vector2d center)
+	public void Initialize(
+		MapboxAccess mbxAccess
+		, CanonicalTileId tileId
+		, float unityTileScale
+		, Vector2d center
+		, Action finishedLoadingCallback
+	)
 	{
 		string name = tileId.ToString();
 		Quaternion rotation = new Quaternion(0.7f, 0, 0, 0.7f);
@@ -101,21 +107,27 @@ public class Tile : MonoBehaviour
 			tileResource.GetUrl(),
 			(Response r) =>
 			{
-
-				if (r.HasError)
+				try
 				{
-					Debug.LogErrorFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
-					return;
+					if (r.HasError)
+					{
+						Debug.LogErrorFormat("response, hasError:{0} exceptions:{1}", r.HasError, r.ExceptionsAsString);
+						return;
+					}
+					//
+					if (null == tileRepresentation) { return; }
+					MeshRenderer mr = tileRepresentation.GetComponent<MeshRenderer>();
+					if (null == mr) { return; }
+					_texture = new Texture2D(0, 0, TextureFormat.RGB24, true);
+					_texture.wrapMode = TextureWrapMode.Clamp;
+					_texture.LoadImage(r.Data);
+					mr.material.mainTexture = _texture;
+					//mr.material.shader = Shader.Find("Unlit/Transparent");
 				}
-				//
-				if (null == tileRepresentation) { return; }
-				MeshRenderer mr = tileRepresentation.GetComponent<MeshRenderer>();
-				if (null == mr) { return; }
-				_texture = new Texture2D(0, 0, TextureFormat.RGB24, true);
-				_texture.wrapMode = TextureWrapMode.Clamp;
-				_texture.LoadImage(r.Data);
-				mr.material.mainTexture = _texture;
-				//mr.material.shader = Shader.Find("Unlit/Transparent");
+				finally
+				{
+					finishedLoadingCallback();
+				}
 			},
 			30,
 			tileId,
