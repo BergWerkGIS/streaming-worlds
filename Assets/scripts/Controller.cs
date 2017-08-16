@@ -74,19 +74,23 @@ public class Controller : MonoBehaviour
 		_cameraZoomingRangeMaxY = (int)(_unityTileScale * 2.5f);
 		_cameraZoomingRangeMinY = (int)(_unityTileScale * 1.25f);
 
+		//vienna austria
 		_centerWebMerc.x = 1824833.5;
 		_centerWebMerc.y = 6139216.9;
+		//gibraltar
+		//_centerWebMerc.x = -626272;
+		//_centerWebMerc.y = 4277965;
 
 		_DEBUG_hitPointScale = _unityTileScale * 0.05f;
 		_DEBUG_cameraCenterRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 		_DEBUG_cameraCenterRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
 		_DEBUG_cameraCenterRayHitPnt.name = "camera center ray hit point";
-		_DEBUG_cameraLLRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		_DEBUG_cameraLLRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
-		_DEBUG_cameraLLRayHitPnt.name = "camera LL ray hit point";
-		_DEBUG_cameraURRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		_DEBUG_cameraURRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
-		_DEBUG_cameraURRayHitPnt.name = "camera UR ray hit point";
+		//_DEBUG_cameraLLRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		//_DEBUG_cameraLLRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
+		//_DEBUG_cameraLLRayHitPnt.name = "camera LL ray hit point";
+		//_DEBUG_cameraURRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		//_DEBUG_cameraURRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
+		//_DEBUG_cameraURRayHitPnt.name = "camera UR ray hit point";
 
 
 
@@ -186,6 +190,7 @@ public class Controller : MonoBehaviour
 			//	, (llWebMerc.y + urWebMerc.y) / 2d
 			//));
 			sb.AppendLine(string.Format("center[LatLng]:{0:0.0000} / {1:0.0000}", _viewPortLatLngBounds.Center.x, _viewPortLatLngBounds.Center.y));
+			sb.AppendLine(string.Format("center[WebMerc]:{0:0.0000} / {1:0.0000}", _centerWebMerc.x, _centerWebMerc.y));
 			//sb.AppendLine(string.Format("center[vwPrtBnds]:{0}", _viewPortLatLngBounds.Center));
 
 			Hud.text = sb.ToString();
