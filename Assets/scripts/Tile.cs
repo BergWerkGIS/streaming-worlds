@@ -31,7 +31,9 @@ public class Tile : MonoBehaviour
 		MapboxAccess mbxAccess
 		, CanonicalTileId tileId
 		, float unityTileScale
-		, Vector2d center
+		, UnwrappedTileId centerTile
+		, Vector2d shift
+		, float factor
 	)
 	{
 		string name = tileId.ToString();
@@ -62,48 +64,17 @@ public class Tile : MonoBehaviour
 		text.text = name.Replace("/", Environment.NewLine);
 		//text.text = tileId.Z.ToString();
 
-
 		Vector3 unityScale = new Vector3(unityTileScale, 1, unityTileScale);
 		transform.localScale = unityScale;
 
-		//number of tiles along the world's edge at current zoomlevel
-		int maxTileCount = (int)Math.Pow(2, tileId.Z);
-		int tileIdShift = maxTileCount / 2;
-
-
-		Vector3 position;
-		// shift origin from slippy map tile id system to unity coordinate system:
-		// slippy map tile ids: start from top left and increase to the right and to the bottom
-		// unity coordinate system: cartesian "starting in the middle (0/0)" going in all 4 directions
-		if (tileId.Z == -5)
-		{
-			position = new Vector3(0 - (float)center.x, 0, 0 - (float)center.y);
-		}
-		else
-		{
-			// x: * shift to west by half of all x tiles at that zoom
-			//    * multiply by tile scale in Unity units
-			//    * add another half tile scale to get center 
-			// z: * reverse order from top -> bottom to bottom -> top
-			//    * shift to north by half of all y tiles at that zoom, plus 1
-			//    * multiply by tile scale in Unity units
-			//    * add another half tile scale to get center 
-			//work with doubles before assigning to Vector3 to avoid rouding errors
-			//double x = ((tileId.X - tileIdShift) * unityTileScale + (unityTileScale / 2)) - (center.x * Math.Pow(2, tileId.Z));
-			//double z = ((maxTileCount - tileId.Y - (tileIdShift + 1)) * unityTileScale + (unityTileScale / 2)) - (center.y * Math.Pow(2, tileId.Z));
-			//position = new Vector3((float)x, 0, (float)z);
-			Vector2d latLng = Conversions.MetersToLatLon(center);
-			UnwrappedTileId centerTile = TileCover.CoordinateToTileId(latLng, tileId.Z);
-			Vector2d centerTileCenter = Conversions.LatLonToMeters(Conversions.TileIdToCenterLatitudeLongitude(centerTile.X, centerTile.Y, centerTile.Z));
-			Vector2d shift = center - centerTileCenter;
-			float factor = Conversions.GetTileScaleInMeters(tileId.Z) * 256 / unityTileScale;
-			position = new Vector3(
-				(tileId.X - centerTile.X) * unityTileScale - (float)shift.x / factor
-				, 0
-				, (centerTile.Y - tileId.Y) * unityTileScale - (float)shift.y / factor
-			);
-		}
-		//Debug.LogFormat("{0}: position[unity units]:{1}/{2}", tileId, position.x, position.z);
+		//position the tile relative to the center tile of the current viewport using the tile id
+		//multiply by tile size Unity units (unityTileScale)
+		//shift by distance of current viewport center to center of center tile
+		Vector3 position = new Vector3(
+			(tileId.X - centerTile.X) * unityTileScale - (float)shift.x / factor
+			, 0
+			, (centerTile.Y - tileId.Y) * unityTileScale - (float)shift.y / factor
+		);
 
 		transform.localPosition = position;
 
@@ -133,7 +104,7 @@ public class Tile : MonoBehaviour
 					mr.material.mainTexture = _texture;
 					//mr.material.shader = Shader.Find("Unlit/Transparent");
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					Debug.LogError(ex);
 				}
