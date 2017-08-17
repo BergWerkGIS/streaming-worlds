@@ -72,6 +72,32 @@ namespace Mapbox.Map
 			return tiles;
 		}
 
+
+		public static HashSet<CanonicalTileId> GetWithWebMerc(Vector2dBounds bounds, int zoom)
+		{
+			HashSet<CanonicalTileId> tiles = new HashSet<CanonicalTileId>();
+
+			if (bounds.IsEmpty()) { return tiles; }
+
+			//stay within WebMerc bounds
+			Vector2d swWebMerc = new Vector2d(Math.Max(bounds.West, -Constants.WebMercMax), Math.Max(bounds.South, -Constants.WebMercMax));
+			Vector2d neWebMerc = new Vector2d(Math.Min(bounds.East, Constants.WebMercMax), Math.Min(bounds.North, Constants.WebMercMax));
+
+			UnwrappedTileId swTile = WebMercatorToTileId(swWebMerc, zoom);
+			UnwrappedTileId neTile = WebMercatorToTileId(neWebMerc, zoom);
+
+			for (int x = swTile.X; x <= neTile.X; x++)
+			{
+				for (int y = neTile.Y; y <= swTile.Y; y++)
+				{
+					tiles.Add(new UnwrappedTileId(zoom, x, y).Canonical);
+				}
+			}
+
+			return tiles;
+		}
+
+
 		/// <summary> Converts a coordinate to a tile identifier. </summary>
 		/// <param name="coord"> Geographic coordinate. </param>
 		/// <param name="zoom"> Zoom level. </param>
@@ -95,5 +121,31 @@ namespace Mapbox.Map
 
 			return new UnwrappedTileId(zoom, x, y);
 		}
+
+
+		/// <summary>
+		///  Converts a Web Mercator coordinate to a tile identifier. https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Derivation_of_tile_names
+		/// </summary>
+		/// <param name="webMerc">Web Mercator coordinate</param>
+		/// <param name="zoom">Zoom level</param>
+		/// <returns>The to tile identifier.</returns>
+		public static UnwrappedTileId WebMercatorToTileId(Vector2d webMerc, int zoom)
+		{
+			double tileCount = Math.Pow(2, zoom);
+			//HACK!!! TODO: x,y are flipped: investigate!!!
+			double dblX = webMerc.y / Constants.WebMercMax;
+			double dblY = webMerc.x / Constants.WebMercMax;
+			dblX = 1 + dblX;
+			dblY = 1 - dblY;
+			dblX /= 2;
+			dblY /= 2;
+			dblX *= tileCount;
+			dblY *= tileCount;
+			int x = (int)Math.Floor(dblX);
+			int y = (int)Math.Floor(dblY);
+			return new UnwrappedTileId(zoom, x, y);
+		}
+
+
 	}
 }

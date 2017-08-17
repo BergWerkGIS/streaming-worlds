@@ -26,7 +26,10 @@ namespace Mapbox.Unity.Utilities
 		private const double InitialResolution = 2 * Math.PI * EarthRadius / TileSize;
 		private const double OriginShift = 2 * Math.PI * EarthRadius / 2;
 
-		/// <summary>according to https://wiki.openstreetmap.org/wiki/Zoom_levels</summary>
+		/// <summary>
+		/// <para>For equator(!): according to https://wiki.openstreetmap.org/wiki/Zoom_levels </para>
+		/// <para>Multiply them by cos(latitude) to adjust to a given latitude</para>
+		/// </summary>
 		private static Dictionary<int, float> TileScaleWikipedia = new Dictionary<int, float>()
 		{
 			{0, 156412 },
@@ -283,6 +286,32 @@ namespace Mapbox.Unity.Utilities
 		}
 
 		/// <summary>
+		/// Gets the Web Mercator x/y of the center of a tile.
+		/// </summary>
+		/// <param name="x"> Tile X position. </param>
+		/// <param name="y"> Tile Y position. </param>
+		/// <param name="zoom"> Zoom level. </param>
+		/// <returns>A <see cref="T:UnityEngine.Vector2d"/> of lat/lon coordinates.</returns>
+		public static Vector2d TileIdToCenterWebMercator(int x, int y, int zoom)
+		{
+			double tileCnt = Math.Pow(2, zoom);
+			double centerX = x + 0.5;
+			double centerY = y + 0.5;
+
+			centerX /= tileCnt;
+			centerY /= tileCnt;
+			centerX *= 2;
+			centerY *= 2;
+			centerX = centerX - 1;
+			centerY = 1 - centerY;
+			centerX *= Constants.WebMercMax;
+			centerY *= Constants.WebMercMax;
+
+			return new Vector2d(centerX, centerY);
+		}
+
+
+		/// <summary>
 		/// Gets the meters per pixels at given latitude and zoom level for a 256x256 tile.
 		/// See: http://wiki.openstreetmap.org/wiki/Zoom_levels.
 		/// </summary>
@@ -297,6 +326,13 @@ namespace Mapbox.Unity.Utilities
 			return (float)(40075016.685578d * Math.Cos(Mathf.Deg2Rad * latitude) / Math.Pow(2f, zoom + 8));
 		}
 
+
+		/// <summary>
+		/// <para>For equator(!): according to https://wiki.openstreetmap.org/wiki/Zoom_levels </para>
+		/// <para>Multiply them by cos(latitude) to adjust to a given latitude</para>
+		/// </summary>
+		/// <param name="zoom"></param>
+		/// <returns></returns>
 		public static float GetTileScaleInMeters(int zoom)
 		{
 			return TileScaleWikipedia[zoom];

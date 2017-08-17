@@ -36,7 +36,7 @@ public class Tile : MonoBehaviour
 		, float factor
 	)
 	{
-		string name = tileId.ToString();
+		string name = string.Format("{0}/{1}/{2}", tileId.Z, tileId.X, tileId.Y);
 		Quaternion rotation = new Quaternion(0.7f, 0, 0, 0.7f);
 
 

@@ -12,6 +12,10 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
+
+
+
+
 public class Controller : MonoBehaviour
 {
 
@@ -75,8 +79,8 @@ public class Controller : MonoBehaviour
 		_cameraZoomingRangeMinY = (int)(_unityTileScale * 1.25f);
 
 		//vienna austria
-		_centerWebMerc.x = 1824833.5;
-		_centerWebMerc.y = 6139216.9;
+		_centerWebMerc.x = 1827980.66;
+		_centerWebMerc.y = 6141386.74;
 		//gibraltar
 		//_centerWebMerc.x = -626272;
 		//_centerWebMerc.y = 4277965;
@@ -112,8 +116,8 @@ public class Controller : MonoBehaviour
 
 		Vector2dBounds currentViewPortLatLngBnds = getcurrentViewPortInLatLng();
 
-		//HACK: using 'ToString()' as Vector2dBounds doesn't (yet?) have an equality operator
 		bool bboxChanged = !(_viewPortLatLngBounds.ToString() == currentViewPortLatLngBnds.ToString());
+
 		float cameraY = _referenceCamera.transform.localPosition.y;
 
 		//no zoom, no pan -> don't change tiles
@@ -189,9 +193,9 @@ public class Controller : MonoBehaviour
 			//	, (llWebMerc.x + urWebMerc.x) / 2d
 			//	, (llWebMerc.y + urWebMerc.y) / 2d
 			//));
-			sb.AppendLine(string.Format("center[LatLng]:{0:0.0000} / {1:0.0000}", _viewPortLatLngBounds.Center.x, _viewPortLatLngBounds.Center.y));
+			//sb.AppendLine(string.Format("viewPort[LatLng]:{0}", _viewPortLatLngBounds));
+			//sb.AppendLine(string.Format("center[LatLng]:{0:0.0000} / {1:0.0000}", _viewPortLatLngBounds.Center.x, _viewPortLatLngBounds.Center.y));
 			sb.AppendLine(string.Format("center[WebMerc]:{0:0.0000} / {1:0.0000}", _centerWebMerc.x, _centerWebMerc.y));
-			//sb.AppendLine(string.Format("center[vwPrtBnds]:{0}", _viewPortLatLngBounds.Center));
 
 			Hud.text = sb.ToString();
 		}
@@ -211,21 +215,31 @@ public class Controller : MonoBehaviour
 		// rays from camera to groundplane: lower left and upper right
 		Ray rayLL = _referenceCamera.ViewportPointToRay(new Vector3(0, 0));
 		Ray rayUR = _referenceCamera.ViewportPointToRay(new Vector3(1, 1));
-		Vector3 hitPntLL = getGroundPlaneHitPoint(rayLL);
-		Vector3 hitPntUR = getGroundPlaneHitPoint(rayUR);
 
+		//Vector3 hitPntLL = getGroundPlaneHitPoint(rayLL);
+		//Vector3 hitPntUR = getGroundPlaneHitPoint(rayUR);
+
+		Vector3 hitPntLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
+		Vector3 hitPntUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
+
+		Vector2d centerLatLng = Conversions.MetersToLatLon(_centerWebMerc);
 		//calculate factor to get from Unity units to WebMercator meters, tile size of 256
-		double factor = Conversions.GetTileScaleInMeters(_currentZoomLevel) * 256 / _unityTileScale;
+		double factor = Conversions.GetTileScaleInMeters((float)centerLatLng.y, _currentZoomLevel) * 256 / _unityTileScale;
+		//double factor = Conversions.GetTileScaleInMeters((float)_viewPortLatLngBounds.Center.y, _currentZoomLevel);
 
 		//convert Unity units to WebMercator and LatLng to get real world bounding box
 		Vector2d llWebMerc = new Vector2d(_centerWebMerc.x + hitPntLL.x * factor, _centerWebMerc.y + hitPntLL.z * factor);
 		Vector2d urWebMerc = new Vector2d(_centerWebMerc.x + hitPntUR.x * factor, _centerWebMerc.y + hitPntUR.z * factor);
-		Vector2d llLatLng = Conversions.MetersToLatLon(llWebMerc);
-		Vector2d urLatLng = Conversions.MetersToLatLon(urWebMerc);
+		//Vector2d llLatLng = Conversions.MetersToLatLon(llWebMerc);
+		//Vector2d urLatLng = Conversions.MetersToLatLon(urWebMerc);
 
+		//return new Vector2dBounds(
+		//	llLatLng
+		//	, urLatLng
+		//);
 		return new Vector2dBounds(
-			llLatLng
-			, urLatLng
+			llWebMerc
+			, urWebMerc
 		);
 	}
 
@@ -238,7 +252,8 @@ public class Controller : MonoBehaviour
 
 		try
 		{
-			HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(latLngbounds, zoom);
+			//HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(latLngbounds, zoom);
+			HashSet<CanonicalTileId> tilesNeeded = TileCover.GetWithWebMerc(latLngbounds, zoom);
 
 			if (tilesNeeded.Count > 256)
 			{
@@ -264,9 +279,15 @@ public class Controller : MonoBehaviour
 
 			//calculate tile at current center of viewport
 			//calculate distance (shift) between center of center tile and center of viewport
-			Vector2d centerLatLng = Conversions.MetersToLatLon(_centerWebMerc);
-			UnwrappedTileId centerTile = TileCover.CoordinateToTileId(centerLatLng, zoom);
-			Vector2d centerTileCenter = Conversions.LatLonToMeters(Conversions.TileIdToCenterLatitudeLongitude(centerTile.X, centerTile.Y, centerTile.Z));
+			//Vector2d centerLatLng = Conversions.MetersToLatLon(_centerWebMerc);
+			//UnwrappedTileId centerTile = TileCover.CoordinateToTileId(centerLatLng, zoom);
+
+			//HACK: switch COORDINATES - there's a bug somewhere with switched x<->y
+			Vector2d centerWebMercDUMMY = new Vector2d(_centerWebMerc.y, _centerWebMerc.x);
+			UnwrappedTileId centerTile = TileCover.WebMercatorToTileId(centerWebMercDUMMY, zoom);
+			//Vector2 centerTileDummy = Conversions.MetersToTile(_centerWebMerc, zoom);
+			//UnwrappedTileId centerTile = new UnwrappedTileId(zoom, (int)centerTileDummy.x, (int)centerTileDummy.y);
+			Vector2d centerTileCenter = Conversions.TileIdToCenterWebMercator(centerTile.X, centerTile.Y, zoom);
 			Vector2d shift = _centerWebMerc - centerTileCenter;
 			float factor = Conversions.GetTileScaleInMeters(zoom) * 256 / _unityTileScale;
 

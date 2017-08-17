@@ -279,6 +279,7 @@
     <Compile Include="Assets\scripts\CameraMovement.cs" />
     <Compile Include="Assets\scripts\Controller.cs" />
     <Compile Include="Assets\scripts\Tile.cs" />
+    <Compile Include="Assets\scripts\Vector2dBoundsNoLimits.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\Resources\Mapbox\MapboxConfiguration.txt" />
