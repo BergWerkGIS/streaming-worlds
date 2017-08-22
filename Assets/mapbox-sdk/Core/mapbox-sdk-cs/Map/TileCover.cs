@@ -132,18 +132,25 @@ namespace Mapbox.Map
 		public static UnwrappedTileId WebMercatorToTileId(Vector2d webMerc, int zoom)
 		{
 			double tileCount = Math.Pow(2, zoom);
-			//HACK!!! TODO: x,y are flipped: investigate!!!
+			//this SDK defines Vector2d.x as latitude and Vector2d.y as longitude
+			//same for WebMerc, so we have to flip x/y to make this formula work
 			double dblX = webMerc.y / Constants.WebMercMax;
 			double dblY = webMerc.x / Constants.WebMercMax;
-			dblX = 1 + dblX;
-			dblY = 1 - dblY;
-			dblX /= 2;
-			dblY /= 2;
-			dblX *= tileCount;
-			dblY *= tileCount;
-			int x = (int)Math.Floor(dblX);
-			int y = (int)Math.Floor(dblY);
+
+			//dblX = 1 + dblX;
+			//dblY = 1 - dblY;
+			//dblX /= 2;
+			//dblY /= 2;
+			//dblX *= tileCount;
+			//dblY *= tileCount;
+			//int x = (int)Math.Floor(dblX);
+			//int y = (int)Math.Floor(dblY);
+			//return new UnwrappedTileId(zoom, x, y);
+
+			int x = (int)Math.Floor((1 + dblX) / 2 * tileCount);
+			int y = (int)Math.Floor((1 - dblY) / 2 * tileCount);
 			return new UnwrappedTileId(zoom, x, y);
+
 		}
 
 

@@ -85,16 +85,18 @@ public class Controller : MonoBehaviour
 		//_centerWebMerc.x = -626272;
 		//_centerWebMerc.y = 4277965;
 
+
+
 		_DEBUG_hitPointScale = _unityTileScale * 0.05f;
 		_DEBUG_cameraCenterRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
 		_DEBUG_cameraCenterRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
 		_DEBUG_cameraCenterRayHitPnt.name = "camera center ray hit point";
-		//_DEBUG_cameraLLRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		//_DEBUG_cameraLLRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
-		//_DEBUG_cameraLLRayHitPnt.name = "camera LL ray hit point";
-		//_DEBUG_cameraURRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-		//_DEBUG_cameraURRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
-		//_DEBUG_cameraURRayHitPnt.name = "camera UR ray hit point";
+		_DEBUG_cameraLLRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		_DEBUG_cameraLLRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
+		_DEBUG_cameraLLRayHitPnt.name = "camera LL ray hit point";
+		_DEBUG_cameraURRayHitPnt = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+		_DEBUG_cameraURRayHitPnt.transform.localScale = new Vector3(_DEBUG_hitPointScale, _DEBUG_hitPointScale, _DEBUG_hitPointScale);
+		_DEBUG_cameraURRayHitPnt.name = "camera UR ray hit point";
 
 
 
@@ -174,10 +176,6 @@ public class Controller : MonoBehaviour
 		}
 		finally
 		{
-			//_DEBUG_cameraCenterRayHitPnt.transform.position = hitPntCenter;
-			//_DEBUG_cameraLLRayHitPnt.transform.position = hitPntLL;
-			//_DEBUG_cameraURRayHitPnt.transform.position = hitPntUR;
-
 			StringBuilder sb = new StringBuilder();
 			sb.AppendLine(string.Format("camera.y:{0:0.00} zoom:{1}", cameraY, _currentZoomLevel));
 			//sb.AppendLine(string.Format("zoom:{0}", _currentZoomLevel));
@@ -210,17 +208,27 @@ public class Controller : MonoBehaviour
 	}
 
 
-	private Vector2dBounds getcurrentViewPortInLatLng()
+	private Vector2dBounds getcurrentViewPortInLatLng(bool useGroundPlane = true)
 	{
-		// rays from camera to groundplane: lower left and upper right
-		Ray rayLL = _referenceCamera.ViewportPointToRay(new Vector3(0, 0));
-		Ray rayUR = _referenceCamera.ViewportPointToRay(new Vector3(1, 1));
+		Vector3 hitPntLL;
+		Vector3 hitPntUR;
 
-		//Vector3 hitPntLL = getGroundPlaneHitPoint(rayLL);
-		//Vector3 hitPntUR = getGroundPlaneHitPoint(rayUR);
+		if (useGroundPlane)
+		{
+			// rays from camera to groundplane: lower left and upper right
+			Ray rayLL = _referenceCamera.ViewportPointToRay(new Vector3(0, 0));
+			Ray rayUR = _referenceCamera.ViewportPointToRay(new Vector3(1, 1));
+			hitPntLL = getGroundPlaneHitPoint(rayLL);
+			hitPntUR = getGroundPlaneHitPoint(rayUR);
+		}
+		else
+		{
+			hitPntLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
+			hitPntUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
+		}
 
-		Vector3 hitPntLL = _referenceCamera.ViewportToWorldPoint(new Vector3(0, 0, _referenceCamera.transform.localPosition.y));
-		Vector3 hitPntUR = _referenceCamera.ViewportToWorldPoint(new Vector3(1, 1, _referenceCamera.transform.localPosition.y));
+		_DEBUG_cameraLLRayHitPnt.transform.position = hitPntLL;
+		_DEBUG_cameraURRayHitPnt.transform.position = hitPntUR;
 
 		Vector2d centerLatLng = Conversions.MetersToLatLon(_centerWebMerc);
 		//calculate factor to get from Unity units to WebMercator meters, tile size of 256
@@ -230,13 +238,8 @@ public class Controller : MonoBehaviour
 		//convert Unity units to WebMercator and LatLng to get real world bounding box
 		Vector2d llWebMerc = new Vector2d(_centerWebMerc.x + hitPntLL.x * factor, _centerWebMerc.y + hitPntLL.z * factor);
 		Vector2d urWebMerc = new Vector2d(_centerWebMerc.x + hitPntUR.x * factor, _centerWebMerc.y + hitPntUR.z * factor);
-		//Vector2d llLatLng = Conversions.MetersToLatLon(llWebMerc);
-		//Vector2d urLatLng = Conversions.MetersToLatLon(urWebMerc);
 
-		//return new Vector2dBounds(
-		//	llLatLng
-		//	, urLatLng
-		//);
+
 		return new Vector2dBounds(
 			llWebMerc
 			, urWebMerc
