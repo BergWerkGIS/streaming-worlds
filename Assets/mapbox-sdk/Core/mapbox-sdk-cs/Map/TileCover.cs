@@ -80,11 +80,15 @@ namespace Mapbox.Map
 			if (bounds.IsEmpty()) { return tiles; }
 
 			//stay within WebMerc bounds
-			Vector2d swWebMerc = new Vector2d(Math.Max(bounds.West, -Constants.WebMercMax), Math.Max(bounds.South, -Constants.WebMercMax));
-			Vector2d neWebMerc = new Vector2d(Math.Min(bounds.East, Constants.WebMercMax), Math.Min(bounds.North, Constants.WebMercMax));
+			Vector2d swWebMerc = new Vector2d(Math.Max(bounds.SouthWest.x, -Constants.WebMercMax), Math.Max(bounds.SouthWest.y, -Constants.WebMercMax));
+			Vector2d neWebMerc = new Vector2d(Math.Min(bounds.NorthEast.x, Constants.WebMercMax), Math.Min(bounds.NorthEast.y, Constants.WebMercMax));
 
-			UnwrappedTileId swTile = WebMercatorToTileId(swWebMerc, zoom);
-			UnwrappedTileId neTile = WebMercatorToTileId(neWebMerc, zoom);
+			UnityEngine.Debug.LogFormat("swWebMerc:{0}/{1} neWebMerc:{2}/{3}", swWebMerc.x, swWebMerc.y, neWebMerc.x, neWebMerc.y);
+
+			UnwrappedTileId swTile = WebMercatorToTileId(new Vector2d(swWebMerc.y, swWebMerc.x), zoom);
+			UnwrappedTileId neTile = WebMercatorToTileId(new Vector2d(neWebMerc.y, neWebMerc.x), zoom);
+
+			UnityEngine.Debug.LogFormat("swTile:{0} neTile:{1}", swTile, neTile);
 
 			for (int x = swTile.X; x <= neTile.X; x++)
 			{
@@ -131,9 +135,12 @@ namespace Mapbox.Map
 		/// <returns>The to tile identifier.</returns>
 		public static UnwrappedTileId WebMercatorToTileId(Vector2d webMerc, int zoom)
 		{
+			// See:  https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Derivation_of_tile_names
 			double tileCount = Math.Pow(2, zoom);
 			//this SDK defines Vector2d.x as latitude and Vector2d.y as longitude
 			//same for WebMerc, so we have to flip x/y to make this formula work
+
+
 			double dblX = webMerc.y / Constants.WebMercMax;
 			double dblY = webMerc.x / Constants.WebMercMax;
 

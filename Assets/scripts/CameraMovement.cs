@@ -148,6 +148,9 @@
 			float zMove = Input.GetAxis("Vertical");
 			if (0 != xMove || 0 != zMove)
 			{
+				float factor = Conversions.GetTileScaleInMeters(Controller._currentZoomLevel) * 256 / Controller._unityTileScale;
+				xMove *= factor;
+				zMove *= factor;
 				Debug.LogFormat("xMove:{0} zMove:{1}", xMove, zMove);
 				Controller._centerWebMerc.x += xMove;
 				Controller._centerWebMerc.y += zMove;
@@ -183,7 +186,7 @@
 						Controller._centerWebMerc.x += offset.x * factor;
 						Controller._centerWebMerc.y += offset.z * factor;
 
-						Debug.LogFormat("shifting tiles, old center:{0} new center:{1} offset:{2}", centerOld, Controller._centerWebMerc, offset);
+						Debug.LogFormat("old center:{0} new center:{1} offset:{2}", centerOld, Controller._centerWebMerc, offset);
 
 						//Vector3 mapPos = new Vector3(-offset.x, 0, -offset.z);
 						//Controller._root.transform.localPosition = mapPos;

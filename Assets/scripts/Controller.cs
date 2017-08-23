@@ -57,7 +57,7 @@ public class Controller : MonoBehaviour
 	private HashSet<CanonicalTileId> _tilesNeeded = new HashSet<CanonicalTileId>();
 	private MapboxAccess _mbxAccess;
 	private float _previousY = float.MinValue;
-	private Vector2dBounds _viewPortLatLngBounds;
+	private Vector2dBounds _viewPortWebMercBounds;
 
 	private GameObject _DEBUG_cameraCenterRayHitPnt;
 	private GameObject _DEBUG_cameraLLRayHitPnt;
@@ -78,9 +78,12 @@ public class Controller : MonoBehaviour
 		_cameraZoomingRangeMaxY = (int)(_unityTileScale * 2.5f);
 		_cameraZoomingRangeMinY = (int)(_unityTileScale * 1.25f);
 
+		//debug disappearing tiles, use z2
+		_centerWebMerc.x = -9999999;
+		_centerWebMerc.y = 0;
 		//vienna austria
-		_centerWebMerc.x = 1827980.66;
-		_centerWebMerc.y = 6141386.74;
+		//_centerWebMerc.x = 1827980.66;
+		//_centerWebMerc.y = 6141386.74;
 		//gibraltar
 		//_centerWebMerc.x = -626272;
 		//_centerWebMerc.y = 4277965;
@@ -116,9 +119,9 @@ public class Controller : MonoBehaviour
 	void Update()
 	{
 
-		Vector2dBounds currentViewPortLatLngBnds = getcurrentViewPortInLatLng();
+		Vector2dBounds currentViewPortLatLngBnds = getcurrentViewPortWebMerc();
 
-		bool bboxChanged = !(_viewPortLatLngBounds.ToString() == currentViewPortLatLngBnds.ToString());
+		bool bboxChanged = !(_viewPortWebMercBounds.ToString() == currentViewPortLatLngBnds.ToString());
 
 		float cameraY = _referenceCamera.transform.localPosition.y;
 
@@ -140,7 +143,7 @@ public class Controller : MonoBehaviour
 			}
 			//if (bboxChanged) { Debug.LogFormat("bbox changed: {0} vs. {1}", _viewPortLatLngBounds, currentViewPortLatLngBnds); }
 
-			_viewPortLatLngBounds = currentViewPortLatLngBnds;
+			_viewPortWebMercBounds = currentViewPortLatLngBnds;
 
 			Vector3 localPosition = _referenceCamera.transform.position;
 			//close to ground, zoom in
@@ -171,8 +174,8 @@ public class Controller : MonoBehaviour
 			if (_initializingTiles) { return; }
 
 			//update viewport in case it was changed by switching zoom level
-			_viewPortLatLngBounds = getcurrentViewPortInLatLng();
-			loadTiles(_viewPortLatLngBounds, _currentZoomLevel);
+			_viewPortWebMercBounds = getcurrentViewPortWebMerc();
+			loadTiles(_viewPortWebMercBounds, _currentZoomLevel);
 		}
 		finally
 		{
@@ -186,14 +189,19 @@ public class Controller : MonoBehaviour
 			//sb.AppendLine(string.Format("shifted:{0}", hitPntShiftedLL));
 			//sb.AppendLine(string.Format("UR[hitPnt]:{0}", hitPntUR));
 			//sb.AppendLine(string.Format("shifted:{0}", hitPntShiftedUR));
-			//sb.AppendLine(string.Format("WebMerc:{0:0.0},{1:0.0} - {2:0.0},{3:0.0}", llWebMerc.x, llWebMerc.y, urWebMerc.x, llWebMerc.y));
+			sb.AppendLine(string.Format("extent:{0:0.0} / {1:0.0}  --  {2:0.0} / {3:0.0}"
+				, _viewPortWebMercBounds.SouthWest.x
+				, _viewPortWebMercBounds.SouthWest.y
+				, _viewPortWebMercBounds.NorthEast.x
+				, _viewPortWebMercBounds.NorthEast.y
+			));
 			//sb.AppendLine(string.Format("center[WebMerc]:{0:0.0} / {1:0.0}"
 			//	, (llWebMerc.x + urWebMerc.x) / 2d
 			//	, (llWebMerc.y + urWebMerc.y) / 2d
 			//));
 			//sb.AppendLine(string.Format("viewPort[LatLng]:{0}", _viewPortLatLngBounds));
 			//sb.AppendLine(string.Format("center[LatLng]:{0:0.0000} / {1:0.0000}", _viewPortLatLngBounds.Center.x, _viewPortLatLngBounds.Center.y));
-			sb.AppendLine(string.Format("center[WebMerc]:{0:0.0000} / {1:0.0000}", _centerWebMerc.x, _centerWebMerc.y));
+			sb.AppendLine(string.Format("center:{0:0.0000} / {1:0.0000}", _centerWebMerc.x, _centerWebMerc.y));
 
 			Hud.text = sb.ToString();
 		}
@@ -208,7 +216,7 @@ public class Controller : MonoBehaviour
 	}
 
 
-	private Vector2dBounds getcurrentViewPortInLatLng(bool useGroundPlane = true)
+	private Vector2dBounds getcurrentViewPortWebMerc(bool useGroundPlane = true)
 	{
 		Vector3 hitPntLL;
 		Vector3 hitPntUR;
@@ -232,12 +240,20 @@ public class Controller : MonoBehaviour
 
 		Vector2d centerLatLng = Conversions.MetersToLatLon(_centerWebMerc);
 		//calculate factor to get from Unity units to WebMercator meters, tile size of 256
-		double factor = Conversions.GetTileScaleInMeters((float)centerLatLng.y, _currentZoomLevel) * 256 / _unityTileScale;
+		double factor = Conversions.GetTileScaleInMeters((float)centerLatLng.x, _currentZoomLevel) * 256 / _unityTileScale;
 		//double factor = Conversions.GetTileScaleInMeters((float)_viewPortLatLngBounds.Center.y, _currentZoomLevel);
 
 		//convert Unity units to WebMercator and LatLng to get real world bounding box
-		Vector2d llWebMerc = new Vector2d(_centerWebMerc.x + hitPntLL.x * factor, _centerWebMerc.y + hitPntLL.z * factor);
-		Vector2d urWebMerc = new Vector2d(_centerWebMerc.x + hitPntUR.x * factor, _centerWebMerc.y + hitPntUR.z * factor);
+		double llx = _centerWebMerc.x + hitPntLL.x * factor;
+		double lly = _centerWebMerc.y + hitPntLL.z * factor;
+		double urx = _centerWebMerc.x + hitPntUR.x * factor;
+		double ury = _centerWebMerc.y + hitPntUR.z * factor;
+		llx = llx > 0 ? Math.Min(llx, Mapbox.Utils.Constants.WebMercMax) : Math.Max(llx, -Mapbox.Utils.Constants.WebMercMax);
+		lly = lly > 0 ? Math.Min(lly, Mapbox.Utils.Constants.WebMercMax) : Math.Max(lly, -Mapbox.Utils.Constants.WebMercMax);
+		urx = urx > 0 ? Math.Min(urx, Mapbox.Utils.Constants.WebMercMax) : Math.Max(urx, -Mapbox.Utils.Constants.WebMercMax);
+		ury = ury > 0 ? Math.Min(ury, Mapbox.Utils.Constants.WebMercMax) : Math.Max(ury, -Mapbox.Utils.Constants.WebMercMax);
+		Vector2d llWebMerc = new Vector2d(llx, lly);
+		Vector2d urWebMerc = new Vector2d(urx, ury);
 
 
 		return new Vector2dBounds(
@@ -257,6 +273,11 @@ public class Controller : MonoBehaviour
 		{
 			//HashSet<CanonicalTileId> tilesNeeded = TileCover.Get(latLngbounds, zoom);
 			HashSet<CanonicalTileId> tilesNeeded = TileCover.GetWithWebMerc(latLngbounds, zoom);
+			Debug.LogFormat(
+				"tiles neded:{0}{1}"
+				, tilesNeeded.Count.ToString() + Environment.NewLine
+				,string.Join(Environment.NewLine, tilesNeeded.Select(t => t.ToString()).ToArray())
+			);
 
 			if (tilesNeeded.Count > 256)
 			{
